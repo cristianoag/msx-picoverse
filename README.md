@@ -1,27 +1,26 @@
 # msx-picoverse
 MSX PicoVerse - The MSX experience driven by the RaspBerry Pico
 
-The MSX PicoVerse is an open-source initiative to implement multi-function cartridges for 
-the MSX line of computers using variations of the Raspberry Pico development boards or the
-RP2040/2350 integrated chips.
+The MSX PicoVerse is an open-source initiative aimed at developing multi-function 
+cartridges for the MSX line of computers, utilizing variations of the Raspberry Pi Pico 
+development boards or the RP2040/2350 integrated chips. 
 
-It is a project that aims to bring the MSX experience to the next level, with the possibility 
-to load ROMs, emulate, or even create new hardware by using a software defined approach.
+This project aspires to enhance the MSX experience by enabling users to load ROMs, 
+emulate hardware, or even create new hardware through a software-defined approach.
 
 ## Hardware
 
-The available versions for the board are divided into two categories: 
+The available versions for the cartrdige are divided into two categories: 
 
-### Boards based on the RP2040 chip
+### Cartridges based on the RP2040 chip (PicoVerse 2040)
 
-The RP2040 is a dual-core ARM Cortex-M0+ microcontroller with 264KB of SRAM and 2MB (or 16MB) 
-of Flash memory. The chip offers a wide range of features, including 30 GPIO pins, 2 SPI 
-controllers, 2 I2C controllers, 2 UART controllers, 3 12-bit ADCs, 16 PWM channels, 2 
-USB controllers, and a variety of other interfaces.
+The RP2040 is a dual-core ARM Cortex-M0+ microcontroller operating at up to 133 MHz, 
+featuring 264 KB of SRAM and support for external flash memory. It offers a variety 
+of interfaces, including GPIO pins, SPI, I²C, UART, ADCs, PWM channels, and USB support.
 
-The PicoVerse 2040 cartridges are based on development boards that expose 30 GPIO pins, and *WILL NOT
-WORK* with conventional Raspberry Pi Pico dev boards that usually expose only 26 GPIO pins. At 
-this moment the following boards are supported:
+PicoVerse 2040 cartridges are designed for development boards that expose 30 GPIO pins 
+and are **NOT compatible** with standard Raspberry Pi Pico boards. Currently, the 
+following boards are supported:
 
 * [OLIMEX RP2040-PICO30](https://www.olimex.com/Products/MicroPython/RP2040-PICO30/open-source-hardware)
 * [OLIMEX RP2040-PICO30-16](https://www.olimex.com/Products/MicroPython/RP2040-PICO30/open-source-hardware)
@@ -29,25 +28,25 @@ this moment the following boards are supported:
 The OLIMEX boards are also open-source and can be built from the provided files available in the
 GitHub at https://github.com/OLIMEX/RP2040-PICO30
 
-### Boards based on the RP2350 chip
+### Cartridges based on the RP2350 chip (PicoVerse 2350)
 
-The RP2350 is a high-performance microcontroller developed by Raspberry Pi Ltd., introduced
-in August 2024 as the successor to the RP2040. It features a unique dual-core, dual-architecture 
-design, allowing to select between two Arm Cortex-M33 cores and two open-hardware Hazard3 
-RISC-V cores, operating at up to 150 MHz. 
+The RP2350, introduced in August 2024, is a high-performance microcontroller developed by
+Raspberry Pi Ltd. It features a unique dual-core, dual-architecture design, allowing 
+selection between two Arm Cortex-M33 cores or two open-hardware Hazard3 RISC-V cores, 
+operating at up to 150 MHz. 
 
-Key specifications include 520 KB of on-chip SRAM divided into ten independent banks, 
-support for up to 16 MB of external QSPI flash or PSRAM, and a comprehensive set of 
-features:
+Key specifications include:
 
+* Memory: 520 KB of on-chip SRAM divided into ten independent banks.
+* External Memory Support: Up to 16 MB of external QSPI flash or PSRAM.
 * Communication Interfaces: 2× UART, 2× SPI controllers, 2× I²C controllers.
 * Analog and Digital I/O: 24 PWM channels, 4 or 8 ADC channels (depending on the package), and up to 48 GPIO pins.
 * USB Support: USB 1.1 controller with host and device capabilities.
-* Programmable I/O: 12 PIO state machines for flexible interfacing. 
+* Programmable I/O: 12 PIO state machines for flexible interfacing.
 
-The PicoVerse 2350 cartridges are based on development boards that expose 48 GPIO pins, and *WILL NOT
-WORK* with conventional Raspberry Pi Pico2 dev boards that usually expose only 26 GPIO pins. At 
-this moment the following boards are supported:
+PicoVerse 2350 cartridges are based on development boards that expose 48 GPIO pins 
+and are not compatible with conventional Raspberry Pi Pico 2 development boards, 
+which typically expose only 26 GPIO pins. Currently, the following board is supported:
 
 * [Pimoroni PGA2350](https://shop.pimoroni.com/products/pga2350?variant=42092629229651)
 
