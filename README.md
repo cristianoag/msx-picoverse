@@ -1,11 +1,8 @@
 # MSX PicoVerse - The MSX experience driven by the RaspBerry Pico
 
-The MSX PicoVerse is an open-source initiative aimed at developing multi-function 
-cartridges for the MSX line of computers, utilizing variations of the Raspberry Pi Pico 
-development boards or the RP2040/2350 integrated chips. 
+The MSX PicoVerse is an open-source initiative aimed at developing multi-function cartridges for the MSX line of computers, utilizing variations of the Raspberry Pi Pico development boards or the RP2040/2350 integrated chips. 
 
-This project aspires to enhance the MSX experience by enabling users to load ROMs, 
-emulate hardware, or even create new hardware through a software-defined approach.
+This project aspires to enhance the MSX experience by enabling users to load ROMs, emulate hardware, or even create new hardware through a software-defined approach.
 
 ## Hardware
 
@@ -50,8 +47,8 @@ which typically expose only 26 GPIO pins. Currently, the following boards are su
 
 ## Software
 
-The software for the PicoVerse cartridges is being developed. The software will be fully 
-open-sourced. The carts are also compatible with the MSX&#960; project.
+The software for the PicoVerse cartridges is being developed. The software will be fully open-sourced. The RP2040 based carts are also compatible with the MSX&#960; project.
+
 ## License 
 
 ![Open Hardware](images/ccans.png)
