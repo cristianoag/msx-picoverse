@@ -15,13 +15,18 @@ The available versions for the cartrdige are divided into two categories:
 
 The RP2040 is a dual-core ARM Cortex-M0+ microcontroller operating at up to 133 MHz, featuring 264 KB of SRAM and support for external flash memory. It offers a variety of interfaces, including GPIO pins, SPI, I²C, UART, ADCs, PWM channels, and USB support.
 
-PicoVerse 2040 cartridges are designed for development boards that expose 30 GPIO pins and are **NOT compatible** with standard Raspberry Pi Pico boards. Currently, the following boards are supported:
+PicoVerse 2040 cartridges are designed for development boards that expose 30 GPIO pins and are **NOT compatible** with standard Raspberry Pi Pico boards. The table below show the hardware available and the respective RP2040 boards:
 
-* [OLIMEX RP2040-PICO30](https://www.olimex.com/Products/MicroPython/RP2040-PICO30/open-source-hardware)
-* [OLIMEX RP2040-PICO30-16](https://www.olimex.com/Products/MicroPython/RP2040-PICO30/open-source-hardware)
-* [ALIEXPRESS RP2040 PURPLE RP2040](https://s.click.aliexpress.com/e/_DnbXqJF)
+|Cartridge Design Files|Compatible Pico 2040 Boards|
+|-----------------------|------------------|
+|[PicoVerse RP2040-PICO30](hardware/OLIMEX-RP2040-PICO30)|[OLIMEX RP2040-PICO30](https://www.olimex.com/Products/MicroPython/RP2040-PICO30/open-source-hardware)(1)|
+|[PicoVerse RP2040-PICO30](hardware/OLIMEX-RP2040-PICO30)|[OLIMEX RP2040-PICO30-16](https://www.olimex.com/Products/MicroPython/RP2040-PICO30/open-source-hardware)(1)|
+|[PicoVerse RP2040-PURPLE](hardware/ALIEXPRESS-RP2040-PURPLE)|[ALIEXPRESS RP2040 PURPLE](https://s.click.aliexpress.com/e/_DnbXqJF)|
+|[PicoVerse RP2040-PURPLE 5V](hardware/ALIEXPRESS-RP2040-PURPLE-5V)(2)|[ALIEXPRESS RP2040 PURPLE](https://s.click.aliexpress.com/e/_DnbXqJF)|
 
-The OLIMEX boards are also open-source and can be built from the provided files available in the GitHub at https://github.com/OLIMEX/RP2040-PICO30
+(1) The OLIMEX boards are also open-source and can be built from the provided files available in the GitHub at https://github.com/OLIMEX/RP2040-PICO30
+
+(2) The PicoVerse RP2040-PURPLE 5V is a modified version of the original design that connects the majority of the Pico GPIO pins directly to 5V. There is a debate about the safety of this approach, as it can damage the Pico board as it is not officially documented that the GPIO pins can be connected directly to 5V. This version only supports the AliExpress RP2040 PURPLE boards.
 
 ### Cartridges based on the RP2350 chip (PicoVerse 2350)
 
@@ -40,6 +45,8 @@ PicoVerse 2350 cartridges are based on development boards that expose 48 GPIO pi
 which typically expose only 26 GPIO pins. Currently, the following boards are supported:
 
 * [Pimoroni PGA2350](https://shop.pimoroni.com/products/pga2350?variant=42092629229651)
+* [Olimex Pico2 XL]()
+* [Olimex Pico2 XXL]()
 
 ## Software
 
