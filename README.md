@@ -1,5 +1,4 @@
-# msx-picoverse
-MSX PicoVerse - The MSX experience driven by the RaspBerry Pico
+# MSX PicoVerse - The MSX experience driven by the RaspBerry Pico
 
 The MSX PicoVerse is an open-source initiative aimed at developing multi-function 
 cartridges for the MSX line of computers, utilizing variations of the Raspberry Pi Pico 
@@ -14,27 +13,19 @@ The available versions for the cartrdige are divided into two categories:
 
 ### Cartridges based on the RP2040 chip (PicoVerse 2040)
 
-The RP2040 is a dual-core ARM Cortex-M0+ microcontroller operating at up to 133 MHz, 
-featuring 264 KB of SRAM and support for external flash memory. It offers a variety 
-of interfaces, including GPIO pins, SPI, I²C, UART, ADCs, PWM channels, and USB support.
+The RP2040 is a dual-core ARM Cortex-M0+ microcontroller operating at up to 133 MHz, featuring 264 KB of SRAM and support for external flash memory. It offers a variety of interfaces, including GPIO pins, SPI, I²C, UART, ADCs, PWM channels, and USB support.
 
-PicoVerse 2040 cartridges are designed for development boards that expose 30 GPIO pins 
-and are **NOT compatible** with standard Raspberry Pi Pico boards. Currently, the 
-following boards are supported:
+PicoVerse 2040 cartridges are designed for development boards that expose 30 GPIO pins and are **NOT compatible** with standard Raspberry Pi Pico boards. Currently, the following boards are supported:
 
 * [OLIMEX RP2040-PICO30](https://www.olimex.com/Products/MicroPython/RP2040-PICO30/open-source-hardware)
 * [OLIMEX RP2040-PICO30-16](https://www.olimex.com/Products/MicroPython/RP2040-PICO30/open-source-hardware)
 * [ALIEXPRESS RP2040 PURPLE RP2040](https://s.click.aliexpress.com/e/_DnbXqJF)
 
-The OLIMEX boards are also open-source and can be built from the provided files available in the
-GitHub at https://github.com/OLIMEX/RP2040-PICO30
+The OLIMEX boards are also open-source and can be built from the provided files available in the GitHub at https://github.com/OLIMEX/RP2040-PICO30
 
 ### Cartridges based on the RP2350 chip (PicoVerse 2350)
 
-The RP2350, introduced in August 2024, is a high-performance microcontroller developed by
-Raspberry Pi Ltd. It features a unique dual-core, dual-architecture design, allowing 
-selection between two Arm Cortex-M33 cores or two open-hardware Hazard3 RISC-V cores, 
-operating at up to 150 MHz. 
+The RP2350, introduced in August 2024, is a high-performance microcontroller developed by Raspberry Pi Ltd. It features a unique dual-core, dual-architecture design, allowing selection between two Arm Cortex-M33 cores or two open-hardware Hazard3 RISC-V cores, operating at up to 150 MHz. 
 
 Key specifications include:
 
@@ -45,9 +36,8 @@ Key specifications include:
 * USB Support: USB 1.1 controller with host and device capabilities.
 * Programmable I/O: 12 PIO state machines for flexible interfacing.
 
-PicoVerse 2350 cartridges are based on development boards that expose 48 GPIO pins 
-and are not compatible with conventional Raspberry Pi Pico 2 development boards, 
-which typically expose only 26 GPIO pins. Currently, the following board is supported:
+PicoVerse 2350 cartridges are based on development boards that expose 48 GPIO pins and are **NOT compatible** with conventional Raspberry Pi Pico 2 development boards, 
+which typically expose only 26 GPIO pins. Currently, the following boards are supported:
 
 * [Pimoroni PGA2350](https://shop.pimoroni.com/products/pga2350?variant=42092629229651)
 
