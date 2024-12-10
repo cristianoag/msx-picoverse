@@ -24,6 +24,7 @@ following boards are supported:
 
 * [OLIMEX RP2040-PICO30](https://www.olimex.com/Products/MicroPython/RP2040-PICO30/open-source-hardware)
 * [OLIMEX RP2040-PICO30-16](https://www.olimex.com/Products/MicroPython/RP2040-PICO30/open-source-hardware)
+* [ALIEXPRESS RP2040 PURPLE RP2040](https://s.click.aliexpress.com/e/_DnbXqJF)
 
 The OLIMEX boards are also open-source and can be built from the provided files available in the
 GitHub at https://github.com/OLIMEX/RP2040-PICO30
