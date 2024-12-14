@@ -16,6 +16,7 @@
 #include "hardware/dma.h"
 #include "bootsel_button.h"
 #include "flash.h"
+#include "picoverse.h"
 
 #define VER_MAJOR 1
 #define VER_MINOR 0
