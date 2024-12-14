@@ -47,7 +47,9 @@ which typically expose only 26 GPIO pins. Currently, the following boards are su
 
 ## Software
 
-The software for the PicoVerse cartridges is being developed. The software will be fully open-sourced. The RP2040 based carts are also compatible with the MSX&#960; project.
+The software for the PicoVerse cartridges is being developed. The software will be fully open-sourced. 
+
+The RP2040 based carts are also compatible with the [MSX&#960;](https://github.com/piigaa-densetu-two-dai/MSXpi) project created by @piigaa-densetu-two-dai, so you can use any of the software alternatives created for that board with this open source hardware.
 
 ### FlashROM (under development)
 
