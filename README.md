@@ -57,6 +57,10 @@ You can then push and hold the BOOTSEL button on the cartridge to format the dri
 
 ![alt text](images/flashrom1.jpg)
 
+* FatFS - http://elm-chan.org/fsw/ff/
+* PicoUSB Flash Drive - https://github.com/oyama/pico-usb-flash-drive
+* SPIFTL - Embedded, Static Wear-Leveling FTL Library - https://github.com/earlephilhower/SPIFTL
+
 ## License 
 
 ![Open Hardware](images/ccans.png)
