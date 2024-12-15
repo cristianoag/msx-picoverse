@@ -1,3 +1,11 @@
+// MSX PICOVERSE PROJECT
+//
+// This is small test program that demonstrates how to load simple ROM images using the MSX PICOVERSE
+// project. You need to concatenate the ROM image to the end of this program binary in order to load it.
+// The program will then act as a simple ROM cartridge that responds to memory read requests from the MSX.
+// The ROM image is assumed to be exactly 32KB in size (at this moment).
+// Author: Cristiano Goncalves
+
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "loadrom.h"
@@ -68,10 +76,13 @@ static inline void set_data_bus_input(void) {
     gpio_set_dir(PIN_D7, GPIO_IN);
 }
 
-
+// -----------------------
+// Main program
+// -----------------------
 int main()
 {
     stdio_init_all();
+    
     sleep_ms(2000); // Give time for USB to enumerate
 
     // Initialize address pins as input
@@ -117,10 +128,11 @@ int main()
     gpio_put(PIN_WAIT, 1); // Default no wait
 
     // The 32KB ROM is concatenated right after the main program binary.
-    // __flash_binary_end points to the end of our program in flash memory.
+    // __flash_binary_end points to the end of the program in flash memory.
     const uint8_t *rom = (const uint8_t *)&__flash_binary_end;
     printf("Debug: Program started, ROM at %p, size=%d bytes\n", rom, ROM_SIZE);
     uint32_t cycle_count = 0;
+    uint8_t data;
 
     while (1) {
         // Check control signals
@@ -131,33 +143,30 @@ int main()
         if (sltsl && rd && !wr) {
             // MSX is requesting a memory read from this slot
             uint16_t addr = read_address_bus();
-            uint8_t data = 0xFF;
-            if (addr < ROM_SIZE) {
-                data = rom[addr];
+
+            if (addr >= 0x4000 && addr <= 0xBFFF) {
+                uint16_t offset = addr - 0x4000;
+                data = rom[offset];
+                //printf("Debug: RD cycle - SLTSL=%d RD=%d WR=%d ADDR=0x%04X DATA=0x%02X\n",
+                //    sltsl, rd, wr, addr, data);
+                // Drive data onto the bus
+                set_data_bus_output(data);
+
+                 // Optionally manipulate WAIT if needed for timing, e.g.:
+                //gpio_put(PIN_WAIT, 0); // Add wait state if necessary
+
+                // Wait until the read cycle completes (RD goes high)
+                while (gpio_get(PIN_RD) == 0) {
+                 tight_loop_contents();
+                }
+
+                // Return data lines to input mode after cycle completes
+                set_data_bus_input();
+
+                // Release WAIT line if used
+                //gpio_put(PIN_WAIT, 1);
             }
 
-            // Optionally manipulate WAIT if needed for timing, e.g.:
-            //gpio_put(PIN_WAIT, 0); // Add wait state if necessary
-
-            // Drive data onto the bus
-            set_data_bus_output(data);
-            
-            // For debugging, print occasionally
-            if ((cycle_count % 1000) == 0) {
-                printf("Debug: RD cycle - SLTSL=%d RD=%d WR=%d ADDR=0x%04X DATA=0x%02X\n",
-                       sltsl, rd, wr, addr, data);
-            }
-
-            // Wait until the read cycle completes (RD goes high)
-            while (gpio_get(PIN_RD) == 0) {
-                tight_loop_contents();
-            }
-
-            // Return data lines to input mode after cycle completes
-            set_data_bus_input();
-
-            // Release WAIT line if used
-            //gpio_put(PIN_WAIT, 1);
         } else {
             // Not a read cycle - ensure data bus is not driven
             set_data_bus_input();
