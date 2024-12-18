@@ -51,17 +51,9 @@ The software for the PicoVerse cartridges is being developed. The software will 
 
 The RP2040 based carts are also compatible with the [MSX&#960;](https://github.com/piigaa-densetu-two-dai/MSXpi) project created by @piigaa-densetu-two-dai, so you can use any of the software alternatives created for that board with this open source hardware.
 
-### FlashROM (under development)
+If you want to contribute to the software development, please check the [Software Playground](software/picoverse_2040/) folder for more information.
 
-The Flashrom firmware allows loading ROMs from the Raspberry Pi Pico's flash memory. When you flash the cartridge with this firmware, a new drive will be created/appear on your PC when you connect the cartridge/pico to it via USB cable. The drive has the name PICOVERSE.
 
-You can then push and hold the BOOTSEL button on the cartridge to format the drive and then drag and drop ROM files to it. The cartridge will then read the ROM files and make them available to the MSX computer user via a menu system. The user can then select the ROM to be loaded into the MSX computer.
-
-![alt text](images/flashrom1.jpg)
-
-* FatFS - http://elm-chan.org/fsw/ff/
-* PicoUSB Flash Drive - https://github.com/oyama/pico-usb-flash-drive
-* SPIFTL - Embedded, Static Wear-Leveling FTL Library - https://github.com/earlephilhower/SPIFTL
 
 ## License 
 
