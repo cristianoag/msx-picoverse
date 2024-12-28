@@ -36,8 +36,7 @@
     "raspberry-pi-pico.useCmakeTools": false,
     "raspberry-pi-pico.cmakePath": "${HOME}/.pico-sdk/cmake/v3.29.9/bin/cmake",
     "raspberry-pi-pico.ninjaPath": "${HOME}/.pico-sdk/ninja/v1.12.1/ninja",
-    "cortex-debug.variableUseNaturalFormat": true,
     "files.associations": {
-        "stdlib.h": "c"
+        "clocks.h": "c"
     }
 }

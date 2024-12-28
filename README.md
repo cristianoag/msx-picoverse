@@ -42,8 +42,8 @@ PicoVerse 2350 cartridges are based on development boards that expose 48 GPIO pi
 which typically expose only 26 GPIO pins. Currently, the following boards are supported:
 
 * [Pimoroni PGA2350](https://shop.pimoroni.com/products/pga2350?variant=42092629229651)
-* [Olimex Pico2 XL]()
-* [Olimex Pico2 XXL]()
+* Olimex Pico2 XL - Not released yet!
+* Olimex Pico2 XXL - Not released yet!
 
 ## Software
 
