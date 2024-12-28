@@ -19,10 +19,10 @@ uf2conv.exe testflash1-rom.bin testflash1-rom.uf2
 
 ## loadrom
 
-This is a program to load a ROM image from the flash memory of the PICO board. The ROM image is read from the flash memory and copied to the RAM of the PICO board. The ROM image is then executed. At this moment onl 32KB ROMs are supported.
+This is a program to load a ROM image from the flash memory of the PICO board. The ROM image is read from the flash memory and copied to the RAM of the PICO board. The ROM image is then executed. At this moment only 16KB or 32KB ROMs plain ROMs are supported.
 
 ```
-copy /b loadrom.bin+romfile_32KB.rom loadrom.bin
+copy /b loadrom.bin+romfile.rom loadrom.bin
 uf2conv.exe loadrom.bin loadrom.uf2
 ```
 
