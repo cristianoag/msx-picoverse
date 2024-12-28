@@ -2,15 +2,18 @@
 // (c) 2024 Cristiano Goncalves
 // (c) The Retro Hacker
 //
+// loadrom.c
+//
 // This is small test program that demonstrates how to load simple ROM images using the MSX PICOVERSE
 // project. You need to concatenate the ROM image to the end of this program binary in order to load it.
 // The program will then act as a simple ROM cartridge that responds to memory read requests from the MSX.
 // 
 // This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
 //
-// If you use, remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
-// You may not use the material for commercial purposes. You must give appropriate credit, provide a link to the license, and indicate if 
-// changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+// If you use, remix, transform, or build upon the material, you must distribute your contributions under the same 
+// license as the original. You may not use the material for commercial purposes. You must give appropriate credit, 
+// provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but 
+// not in any way that suggests the licensor endorses you or your use.
 //
 // ATTENTION
 //
@@ -31,7 +34,7 @@
 // User-defined pin assignments
 // -----------------------
 // Address lines (A0-A15) as inputs from MSX
-#define PIN_A0     0
+#define PIN_A0     0 
 #define PIN_A1     1
 #define PIN_A2     2
 #define PIN_A3     3
@@ -60,11 +63,11 @@
 
 // Control signals
 #define PIN_RD     24   // Read strobe from MSX
-#define PIN_WR     25   // Write strobe from MSX (probably unused for a ROM)
-#define PIN_IORQ   26  // IO Request (for memory mapped I/O, may not be needed)
+#define PIN_WR     25   // Write strobe from MSX
+#define PIN_IORQ   26   // IO Request line from MSX
 #define PIN_SLTSL  27   // Slot Select for this cartridge slot
 #define PIN_WAIT    28  // WAIT line to MSX 
-#define PIN_BUSSDIR 29 // Bus direction line 
+#define PIN_BUSSDIR 29  // Bus direction line 
 
 // This symbol marks the end of the main program in flash.
 // Your ROM data is concatenated immediately after this point.
@@ -194,7 +197,6 @@ int main()
             // MSX is requesting a memory read from this slot
             uint16_t addr = read_address_bus();
             
-            //printf("Debug: RD cycle - SLTSL=%d RD=%d WR=%d ADDR=0x%04X\n", sltsl, rd, wr, addr);
             if (addr >= 0x4000 && addr <= 0xBFFF) {
                 // Drive data bus to output mode
                 set_data_bus_output();
@@ -202,14 +204,9 @@ int main()
                 // Address is within the ROM range
                 uint16_t offset = addr - 0x4000;
                 data = use_sram_copy ? rom_sram[offset] : rom[offset];
-
-                //printf("Debug: RD cycle - SLTSL=%d RD=%d WR=%d ADDR=0x%04X DATA=0x%02X\n", sltsl, rd, wr, addr, data);
                 
                 // Drive data onto the bus
                 write_data_bus(data);
-
-                // Optionally manipulate WAIT if needed for timing, e.g.:
-                //gpio_put(PIN_WAIT, 0); // Add wait state if necessary
 
                 // Wait until the read cycle completes (RD goes high)
                 while (gpio_get(PIN_RD) == 0) {
@@ -219,8 +216,6 @@ int main()
                 // Return data lines to input mode after cycle completes
                 set_data_bus_input();
 
-                // Release WAIT line if used
-                //gpio_put(PIN_WAIT, 1);
             }
 
         } else {
