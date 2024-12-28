@@ -1,10 +1,15 @@
 // MSX PICOVERSE PROJECT
+// (c) 2024 Cristiano Goncalves
+// The Retro Hacker
 //
-// This is small test program that demonstrates how to read the contents of a
-// ROM image that is appended to the end of the main program in the PICO flash memory.
-// The ROM data is read from the flash memory and dumped to the serial console in hexdump 
-// format.
-// Author: Cristiano Goncalves
+// testflash1.c - Simple ROM Dumper for MSX PICOVERSE project - v1.0
+//
+// This is a simple test program that demonstrates how to read the content of a ROM image that is appended 
+// to the end of the main program in the PICO flash memory. The ROM data is read from the flash memory and 
+// dumped to the serial console in hexdump format.
+// 
+// This work is licensed under a "Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International 
+// License". https://creativecommons.org/licenses/by-nc-sa/4.0/
 
 #include <stdio.h>
 #include <hardware/flash.h>
@@ -27,7 +32,7 @@ int main()
     
     while (true) {
         // Print the size of the ROM data
-        printf("PROGRAM SIZE=%d\n", (int)rom);
+        printf("ROM SIZE=%d\n", ROM_SIZE);
         printf("Dumping ROM contents in hexdump format:\n");
 
         // Dump the ROM data in hexdump format

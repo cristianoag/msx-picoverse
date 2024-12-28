@@ -41,7 +41,7 @@ add_executable(testflash1 testflash1.c )
 # pico_embed_binary(testflash1 KMARE kmare.rom)
 
 pico_set_program_name(testflash1 "testflash1")
-pico_set_program_version(testflash1 "0.1")
+pico_set_program_version(testflash1 "1.0")
 
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(testflash1 0)
@@ -57,3 +57,13 @@ target_include_directories(testflash1 PRIVATE
 )
 
 pico_add_extra_outputs(testflash1)
+
+# Custom command to delete the content of the dist folder and copy files
+add_custom_command(TARGET testflash1 POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_SOURCE_DIR}/dist
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/dist
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:testflash1> ${CMAKE_SOURCE_DIR}/dist/testflash1.bin
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/uf2conv.exe ${CMAKE_SOURCE_DIR}/dist/uf2conv.exe
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/hexdump.exe ${CMAKE_SOURCE_DIR}/dist/hexdump.exe
+
+)
