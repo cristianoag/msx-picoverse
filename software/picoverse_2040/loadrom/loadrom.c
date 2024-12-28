@@ -17,8 +17,9 @@
 //
 // ATTENTION
 //
-// This project was made for the retro community and not for commercial purposes. So only retro hardware forums and individual people can 
-// build this project. If you are a company and want to build this project, please contact me first.
+// This project was made for the retro community and not for commercial purposes. So only retro hardware forums and 
+// individual people can // build this project. If you are a company and want to build this project, please contact 
+// me first.
 
 #include <stdio.h>
 #include <string.h>
@@ -27,7 +28,9 @@
 
 // -----------------------
 // ROM size
-// We assume the ROM is exactly 32KB.
+// we assume the ROM is 32KB.
+// can read 16KB or 32KB ROMs
+// -----------------------
 #define ROM_SIZE (32*1024)
 
 // -----------------------
@@ -176,10 +179,8 @@ int main()
     // (Optional) Copy the 32KB appended ROM from Flash to SRAM
     if (use_sram_copy) {
         memcpy(rom_sram, rom, ROM_SIZE);
-        //printf("Debug: Copied 32KB ROM to SRAM.\n");
     }
 
-    //printf("Debug: Program started, ROM at %p, size=%d bytes\n", rom, ROM_SIZE);
     uint32_t cycle_count = 0;
     uint8_t data;
 
@@ -224,7 +225,6 @@ int main()
         }
 
         cycle_count++;
-        //tight_loop_contents();
     }
 
     return 0;
