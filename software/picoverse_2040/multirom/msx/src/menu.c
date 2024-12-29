@@ -104,7 +104,7 @@ void helpMenu()
     Cls(); // Clear the screen
     printf("MSX PICOVERSE 2040     [MultiROM v1.0]");
     Locate(0, 1);
-    printf("--------------------------------------");
+    printf("---------------------------------------");
     Locate(0, 2);
     printf("Use [UP]  [DOWN] to navigate the menu.");
     Locate(0, 3);
