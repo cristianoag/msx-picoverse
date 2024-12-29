@@ -1,0 +1,74 @@
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 1.
+Hexadecimal [16-Bits]
+
+Symbol Table
+
+    .__.$$$.                                                    =  2710 L
+    .__.ABS.                                                    =  0000 G
+    .__.CPU.                                                    =  0000 L
+    .__.H$L.                                                    =  0000 L
+    _Cls                                                           **** GX
+  0 _Done_Version_tag                                              0019 R
+    _Locate                                                        **** GX
+    _Screen                                                        **** GX
+    _WaitKey                                                       **** GX
+  0 ___str_1                                                       0147 R
+  0 ___str_10                                                      0477 R
+  0 ___str_11                                                      048C R
+  0 ___str_12                                                      0493 R
+  0 ___str_13                                                      04A8 R
+  0 ___str_14                                                      04BD R
+  0 ___str_15                                                      04D2 R
+  0 ___str_16                                                      04E7 R
+  0 ___str_17                                                      04FC R
+  0 ___str_18                                                      0511 R
+  0 ___str_19                                                      0526 R
+  0 ___str_2                                                       016E R
+  0 ___str_20                                                      052B R
+  0 ___str_21                                                      0540 R
+  0 ___str_22                                                      0555 R
+  0 ___str_23                                                      056A R
+  0 ___str_24                                                      057F R
+  0 ___str_25                                                      0594 R
+  0 ___str_26                                                      0599 R
+  0 ___str_27                                                      05AE R
+  0 ___str_28                                                      05C3 R
+  0 ___str_29                                                      05D8 R
+  0 ___str_3                                                       0195 R
+  0 ___str_30                                                      05ED R
+  0 ___str_31                                                      0602 R
+  0 ___str_32                                                      0617 R
+  0 ___str_4                                                       0197 R
+  0 ___str_5                                                       01A2 R
+  0 ___str_6                                                       0359 R
+  0 ___str_7                                                       0362 R
+  0 ___str_8                                                       0364 R
+  0 ___str_9                                                       036F R
+    __divsint                                                      **** GX
+  1 _currentIndex                                                  0052 GR
+  1 _currentPage                                                   0050 GR
+  0 _displayMenu                                                   0046 GR
+  1 _game                                                          0000 GR
+  0 _main                                                          0371 GR
+  1 _mapp                                                          0028 GR
+  0 _navigateMenu                                                  01CB GR
+    _printf                                                        **** GX
+  0 _putchar                                                       0000 GR
+  1 _totalFiles                                                    0054 GR
+
+
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 2.
+Hexadecimal [16-Bits]
+
+Area Table
+
+   0 _CODE                                      size  62C   flags    0
+   1 _DATA                                      size   56   flags    0
+   2 _INITIALIZED                               size    0   flags    0
+   3 _DABS                                      size    0   flags    8
+   4 _HOME                                      size    0   flags    0
+   5 _GSINIT                                    size    0   flags    0
+   6 _GSFINAL                                   size    0   flags    0
+   7 _INITIALIZER                               size    0   flags    0
+   8 _CABS                                      size    0   flags    8
+

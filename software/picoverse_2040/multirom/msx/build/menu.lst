@@ -1,0 +1,842 @@
+                              1 ;--------------------------------------------------------
+                              2 ; File Created by SDCC : free open source ANSI-C Compiler
+                              3 ; Version 3.9.0 #11195 (MINGW64)
+                              4 ;--------------------------------------------------------
+                              5 	.module menu
+                              6 	.optsdcc -mz80
+                              7 	
+                              8 ;--------------------------------------------------------
+                              9 ; Public variables in this module
+                             10 ;--------------------------------------------------------
+                             11 	.globl _main
+                             12 	.globl _navigateMenu
+                             13 	.globl _displayMenu
+                             14 	.globl _printf
+                             15 	.globl _WaitKey
+                             16 	.globl _Screen
+                             17 	.globl _Cls
+                             18 	.globl _Locate
+                             19 	.globl _totalFiles
+                             20 	.globl _currentIndex
+                             21 	.globl _currentPage
+                             22 	.globl _mapp
+                             23 	.globl _game
+                             24 	.globl _putchar
+                             25 ;--------------------------------------------------------
+                             26 ; special function registers
+                             27 ;--------------------------------------------------------
+                             28 ;--------------------------------------------------------
+                             29 ; ram data
+                             30 ;--------------------------------------------------------
+                             31 	.area _DATA
+   0000                      32 _game::
+   0000                      33 	.ds 40
+   0028                      34 _mapp::
+   0028                      35 	.ds 40
+   0050                      36 _currentPage::
+   0050                      37 	.ds 2
+   0052                      38 _currentIndex::
+   0052                      39 	.ds 2
+   0054                      40 _totalFiles::
+   0054                      41 	.ds 2
+                             42 ;--------------------------------------------------------
+                             43 ; ram data
+                             44 ;--------------------------------------------------------
+                             45 	.area _INITIALIZED
+                             46 ;--------------------------------------------------------
+                             47 ; absolute external ram data
+                             48 ;--------------------------------------------------------
+                             49 	.area _DABS (ABS)
+                             50 ;--------------------------------------------------------
+                             51 ; global & static initialisations
+                             52 ;--------------------------------------------------------
+                             53 	.area _HOME
+                             54 	.area _GSINIT
+                             55 	.area _GSFINAL
+                             56 	.area _GSINIT
+                             57 ;--------------------------------------------------------
+                             58 ; Home
+                             59 ;--------------------------------------------------------
+                             60 	.area _HOME
+                             61 	.area _HOME
+                             62 ;--------------------------------------------------------
+                             63 ; code
+                             64 ;--------------------------------------------------------
+                             65 	.area _CODE
+                             66 ;src\menu.c:20: int putchar (int character)
+                             67 ;	---------------------------------
+                             68 ; Function putchar
+                             69 ; ---------------------------------
+   0000                      70 _putchar::
+                             71 ;src\menu.c:32: __endasm;
+   0000 21 02 00      [10]   72 	ld	hl, #2
+   0003 39            [11]   73 	add	hl, sp ;Bypass the return address of the function
+   0004 7E            [ 7]   74 	ld	a, (hl)
+   0005 FD 2A C0 FC   [20]   75 	ld	iy,(#0xfcc1 -1) ;BIOS slot in iyh
+   0009 DD E5         [15]   76 	push	ix
+   000B DD 21 A2 00   [14]   77 	ld	ix,#0x00a2 ;address of BIOS routine
+   000F CD 1C 00      [17]   78 	call	0x001c ;interslot call
+   0012 DD E1         [14]   79 	pop	ix
+                             80 ;src\menu.c:34: return character;
+   0014 C1            [10]   81 	pop	bc
+   0015 E1            [10]   82 	pop	hl
+   0016 E5            [11]   83 	push	hl
+   0017 C5            [11]   84 	push	bc
+                             85 ;src\menu.c:35: }
+   0018 C9            [10]   86 	ret
+   0019                      87 _Done_Version_tag:
+   0019 4D 61 64 65 20 77    88 	.ascii "Made with FUSION-C 1.3 R21010 (c)EBSOFT:2021"
+        69 74 68 20 46 55
+        53 49 4F 4E 2D 43
+        20 31 2E 33 20 52
+        32 31 30 31 30 20
+        28 63 29 45 42 53
+        4F 46 54 3A 32 30
+        32 31
+   0045 00                   89 	.db 0x00
+                             90 ;src\menu.c:37: void displayMenu() {
+                             91 ;	---------------------------------
+                             92 ; Function displayMenu
+                             93 ; ---------------------------------
+   0046                      94 _displayMenu::
+   0046 DD E5         [15]   95 	push	ix
+   0048 DD 21 00 00   [14]   96 	ld	ix,#0
+   004C DD 39         [15]   97 	add	ix,sp
+   004E 21 FA FF      [10]   98 	ld	hl, #-6
+   0051 39            [11]   99 	add	hl, sp
+   0052 F9            [ 6]  100 	ld	sp, hl
+                            101 ;src\menu.c:39: Screen(0);
+   0053 AF            [ 4]  102 	xor	a, a
+   0054 F5            [11]  103 	push	af
+   0055 33            [ 6]  104 	inc	sp
+   0056 CDr00r00      [17]  105 	call	_Screen
+   0059 33            [ 6]  106 	inc	sp
+                            107 ;src\menu.c:40: Cls();
+   005A CDr00r00      [17]  108 	call	_Cls
+                            109 ;src\menu.c:42: int startFile = currentPage * FILES_PER_PAGE;
+   005D ED 4Br50r00   [20]  110 	ld	bc, (_currentPage)
+   0061 69            [ 4]  111 	ld	l, c
+   0062 60            [ 4]  112 	ld	h, b
+   0063 29            [11]  113 	add	hl, hl
+   0064 29            [11]  114 	add	hl, hl
+   0065 29            [11]  115 	add	hl, hl
+   0066 09            [11]  116 	add	hl, bc
+   0067 29            [11]  117 	add	hl, hl
+   0068 09            [11]  118 	add	hl, bc
+   0069 E3            [19]  119 	ex	(sp), hl
+                            120 ;src\menu.c:46: printf("MSX PICOVERSE 2040     [MultiROM v1.0]");
+   006A 21r47r01      [10]  121 	ld	hl, #___str_1
+   006D E5            [11]  122 	push	hl
+   006E CDr00r00      [17]  123 	call	_printf
+                            124 ;src\menu.c:47: Locate(0, 1);
+   0071 26 01         [ 7]  125 	ld	h,#0x01
+   0073 E3            [19]  126 	ex	(sp),hl
+   0074 33            [ 6]  127 	inc	sp
+   0075 AF            [ 4]  128 	xor	a, a
+   0076 F5            [11]  129 	push	af
+   0077 33            [ 6]  130 	inc	sp
+   0078 CDr00r00      [17]  131 	call	_Locate
+                            132 ;src\menu.c:48: printf("--------------------------------------");
+   007B 21r6Er01      [10]  133 	ld	hl, #___str_2
+   007E E3            [19]  134 	ex	(sp),hl
+   007F CDr00r00      [17]  135 	call	_printf
+   0082 F1            [10]  136 	pop	af
+                            137 ;src\menu.c:49: Locate(0, currentIndex + 2);
+   0083 3Ar52r00      [13]  138 	ld	a,(#_currentIndex + 0)
+   0086 C6 02         [ 7]  139 	add	a, #0x02
+   0088 F5            [11]  140 	push	af
+   0089 33            [ 6]  141 	inc	sp
+   008A AF            [ 4]  142 	xor	a, a
+   008B F5            [11]  143 	push	af
+   008C 33            [ 6]  144 	inc	sp
+   008D CDr00r00      [17]  145 	call	_Locate
+                            146 ;src\menu.c:50: printf(">");
+   0090 21r95r01      [10]  147 	ld	hl, #___str_3
+   0093 E3            [19]  148 	ex	(sp),hl
+   0094 CDr00r00      [17]  149 	call	_printf
+   0097 F1            [10]  150 	pop	af
+                            151 ;src\menu.c:51: int xi = 0;
+   0098 DD 36 FC 00   [19]  152 	ld	-4 (ix), #0x00
+   009C DD 36 FD 00   [19]  153 	ld	-3 (ix), #0x00
+                            154 ;src\menu.c:52: for (int i = 0; (i < FILES_PER_PAGE) && (xi<totalFiles) ; i++) 
+   00A0 11 00 00      [10]  155 	ld	de, #0x0000
+   00A3                     156 00104$:
+   00A3 7B            [ 4]  157 	ld	a, e
+   00A4 D6 13         [ 7]  158 	sub	a, #0x13
+   00A6 7A            [ 4]  159 	ld	a, d
+   00A7 17            [ 4]  160 	rla
+   00A8 3F            [ 4]  161 	ccf
+   00A9 1F            [ 4]  162 	rra
+   00AA DE 80         [ 7]  163 	sbc	a, #0x80
+   00AC 30 5D         [12]  164 	jr	NC,00101$
+   00AE 21r54r00      [10]  165 	ld	hl, #_totalFiles
+   00B1 DD 7E FC      [19]  166 	ld	a, -4 (ix)
+   00B4 96            [ 7]  167 	sub	a, (hl)
+   00B5 DD 7E FD      [19]  168 	ld	a, -3 (ix)
+   00B8 23            [ 6]  169 	inc	hl
+   00B9 9E            [ 7]  170 	sbc	a, (hl)
+   00BA E2rBFr00      [10]  171 	jp	PO, 00124$
+   00BD EE 80         [ 7]  172 	xor	a, #0x80
+   00BF                     173 00124$:
+   00BF F2r0Br01      [10]  174 	jp	P, 00101$
+                            175 ;src\menu.c:54: Locate(1, 2 + i); // Position on the screen, starting at line 2
+   00C2 7B            [ 4]  176 	ld	a, e
+   00C3 C6 02         [ 7]  177 	add	a, #0x02
+   00C5 D5            [11]  178 	push	de
+   00C6 57            [ 4]  179 	ld	d,a
+   00C7 1E 01         [ 7]  180 	ld	e,#0x01
+   00C9 D5            [11]  181 	push	de
+   00CA CDr00r00      [17]  182 	call	_Locate
+   00CD F1            [10]  183 	pop	af
+   00CE D1            [10]  184 	pop	de
+                            185 ;src\menu.c:55: xi = i+startFile;
+   00CF E1            [10]  186 	pop	hl
+   00D0 E5            [11]  187 	push	hl
+   00D1 19            [11]  188 	add	hl, de
+                            189 ;src\menu.c:56: printf("%-30s %-8s",game[xi], mapp[xi]);  // Print each file name
+   00D2 DD 75 FC      [19]  190 	ld	-4 (ix), l
+   00D5 DD 74 FD      [19]  191 	ld	-3 (ix), h
+   00D8 4D            [ 4]  192 	ld	c, l
+   00D9 44            [ 4]  193 	ld	b, h
+   00DA CB 21         [ 8]  194 	sla	c
+   00DC CB 10         [ 8]  195 	rl	b
+   00DE 21r28r00      [10]  196 	ld	hl, #_mapp
+   00E1 09            [11]  197 	add	hl, bc
+   00E2 7E            [ 7]  198 	ld	a, (hl)
+   00E3 DD 77 FE      [19]  199 	ld	-2 (ix), a
+   00E6 23            [ 6]  200 	inc	hl
+   00E7 7E            [ 7]  201 	ld	a, (hl)
+   00E8 DD 77 FF      [19]  202 	ld	-1 (ix), a
+   00EB 21r00r00      [10]  203 	ld	hl, #_game
+   00EE 09            [11]  204 	add	hl, bc
+   00EF 4E            [ 7]  205 	ld	c, (hl)
+   00F0 23            [ 6]  206 	inc	hl
+   00F1 46            [ 7]  207 	ld	b, (hl)
+   00F2 D5            [11]  208 	push	de
+   00F3 DD 6E FE      [19]  209 	ld	l, -2 (ix)
+   00F6 DD 66 FF      [19]  210 	ld	h, -1 (ix)
+   00F9 E5            [11]  211 	push	hl
+   00FA C5            [11]  212 	push	bc
+   00FB 21r97r01      [10]  213 	ld	hl, #___str_4
+   00FE E5            [11]  214 	push	hl
+   00FF CDr00r00      [17]  215 	call	_printf
+   0102 21 06 00      [10]  216 	ld	hl, #6
+   0105 39            [11]  217 	add	hl, sp
+   0106 F9            [ 6]  218 	ld	sp, hl
+   0107 D1            [10]  219 	pop	de
+                            220 ;src\menu.c:52: for (int i = 0; (i < FILES_PER_PAGE) && (xi<totalFiles) ; i++) 
+   0108 13            [ 6]  221 	inc	de
+   0109 18 98         [12]  222 	jr	00104$
+   010B                     223 00101$:
+                            224 ;src\menu.c:59: Locate(0, 21);
+   010B 3E 15         [ 7]  225 	ld	a, #0x15
+   010D F5            [11]  226 	push	af
+   010E 33            [ 6]  227 	inc	sp
+   010F AF            [ 4]  228 	xor	a, a
+   0110 F5            [11]  229 	push	af
+   0111 33            [ 6]  230 	inc	sp
+   0112 CDr00r00      [17]  231 	call	_Locate
+                            232 ;src\menu.c:60: printf("--------------------------------------");
+   0115 21r6Er01      [10]  233 	ld	hl, #___str_2
+   0118 E3            [19]  234 	ex	(sp),hl
+   0119 CDr00r00      [17]  235 	call	_printf
+                            236 ;src\menu.c:61: Locate(0, 22);
+   011C 26 16         [ 7]  237 	ld	h,#0x16
+   011E E3            [19]  238 	ex	(sp),hl
+   011F 33            [ 6]  239 	inc	sp
+   0120 AF            [ 4]  240 	xor	a, a
+   0121 F5            [11]  241 	push	af
+   0122 33            [ 6]  242 	inc	sp
+   0123 CDr00r00      [17]  243 	call	_Locate
+   0126 F1            [10]  244 	pop	af
+                            245 ;src\menu.c:62: printf("Page %02d/02       [F1 Help] [F2 Config]",currentPage + 1);
+   0127 2Ar50r00      [16]  246 	ld	hl, (_currentPage)
+   012A 23            [ 6]  247 	inc	hl
+   012B 01rA2r01      [10]  248 	ld	bc, #___str_5+0
+   012E E5            [11]  249 	push	hl
+   012F C5            [11]  250 	push	bc
+   0130 CDr00r00      [17]  251 	call	_printf
+   0133 F1            [10]  252 	pop	af
+   0134 F1            [10]  253 	pop	af
+                            254 ;src\menu.c:63: Locate(0, currentIndex + 2);
+   0135 3Ar52r00      [13]  255 	ld	a,(#_currentIndex + 0)
+   0138 C6 02         [ 7]  256 	add	a, #0x02
+   013A F5            [11]  257 	push	af
+   013B 33            [ 6]  258 	inc	sp
+   013C AF            [ 4]  259 	xor	a, a
+   013D F5            [11]  260 	push	af
+   013E 33            [ 6]  261 	inc	sp
+   013F CDr00r00      [17]  262 	call	_Locate
+                            263 ;src\menu.c:64: }
+   0142 DD F9         [10]  264 	ld	sp,ix
+   0144 DD E1         [14]  265 	pop	ix
+   0146 C9            [10]  266 	ret
+   0147                     267 ___str_1:
+   0147 4D 53 58 20 50 49   268 	.ascii "MSX PICOVERSE 2040     [MultiROM v1.0]"
+        43 4F 56 45 52 53
+        45 20 32 30 34 30
+        20 20 20 20 20 5B
+        4D 75 6C 74 69 52
+        4F 4D 20 76 31 2E
+        30 5D
+   016D 00                  269 	.db 0x00
+   016E                     270 ___str_2:
+   016E 2D 2D 2D 2D 2D 2D   271 	.ascii "--------------------------------------"
+        2D 2D 2D 2D 2D 2D
+        2D 2D 2D 2D 2D 2D
+        2D 2D 2D 2D 2D 2D
+        2D 2D 2D 2D 2D 2D
+        2D 2D 2D 2D 2D 2D
+        2D 2D
+   0194 00                  272 	.db 0x00
+   0195                     273 ___str_3:
+   0195 3E                  274 	.ascii ">"
+   0196 00                  275 	.db 0x00
+   0197                     276 ___str_4:
+   0197 25 2D 33 30 73 20   277 	.ascii "%-30s %-8s"
+        25 2D 38 73
+   01A1 00                  278 	.db 0x00
+   01A2                     279 ___str_5:
+   01A2 50 61 67 65 20 25   280 	.ascii "Page %02d/02       [F1 Help] [F2 Config]"
+        30 32 64 2F 30 32
+        20 20 20 20 20 20
+        20 5B 46 31 20 48
+        65 6C 70 5D 20 5B
+        46 32 20 43 6F 6E
+        66 69 67 5D
+   01CA 00                  281 	.db 0x00
+                            282 ;src\menu.c:66: void navigateMenu() 
+                            283 ;	---------------------------------
+                            284 ; Function navigateMenu
+                            285 ; ---------------------------------
+   01CB                     286 _navigateMenu::
+   01CB DD E5         [15]  287 	push	ix
+   01CD F5            [11]  288 	push	af
+                            289 ;src\menu.c:70: while (1) 
+   01CE                     290 00119$:
+                            291 ;src\menu.c:72: key = WaitKey();
+   01CE CDr00r00      [17]  292 	call	_WaitKey
+   01D1 5D            [ 4]  293 	ld	e, l
+                            294 ;src\menu.c:73: Locate(0, 23);
+   01D2 D5            [11]  295 	push	de
+   01D3 3E 17         [ 7]  296 	ld	a, #0x17
+   01D5 F5            [11]  297 	push	af
+   01D6 33            [ 6]  298 	inc	sp
+   01D7 AF            [ 4]  299 	xor	a, a
+   01D8 F5            [11]  300 	push	af
+   01D9 33            [ 6]  301 	inc	sp
+   01DA CDr00r00      [17]  302 	call	_Locate
+   01DD F1            [10]  303 	pop	af
+   01DE D1            [10]  304 	pop	de
+                            305 ;src\menu.c:74: printf("Key: %3d", key);
+   01DF 4B            [ 4]  306 	ld	c, e
+   01E0 06 00         [ 7]  307 	ld	b, #0x00
+   01E2 D5            [11]  308 	push	de
+   01E3 C5            [11]  309 	push	bc
+   01E4 21r59r03      [10]  310 	ld	hl, #___str_6
+   01E7 E5            [11]  311 	push	hl
+   01E8 CDr00r00      [17]  312 	call	_printf
+   01EB F1            [10]  313 	pop	af
+   01EC F1            [10]  314 	pop	af
+   01ED D1            [10]  315 	pop	de
+                            316 ;src\menu.c:75: Locate(0, currentIndex + 2);
+   01EE 3Ar52r00      [13]  317 	ld	a,(#_currentIndex + 0)
+   01F1 C6 02         [ 7]  318 	add	a, #0x02
+   01F3 D5            [11]  319 	push	de
+   01F4 F5            [11]  320 	push	af
+   01F5 33            [ 6]  321 	inc	sp
+   01F6 AF            [ 4]  322 	xor	a, a
+   01F7 F5            [11]  323 	push	af
+   01F8 33            [ 6]  324 	inc	sp
+   01F9 CDr00r00      [17]  325 	call	_Locate
+   01FC 21r62r03      [10]  326 	ld	hl, #___str_7
+   01FF E3            [19]  327 	ex	(sp),hl
+   0200 CDr00r00      [17]  328 	call	_printf
+   0203 F1            [10]  329 	pop	af
+   0204 D1            [10]  330 	pop	de
+                            331 ;src\menu.c:82: currentPage--;
+   0205 ED 4Br50r00   [20]  332 	ld	bc, (_currentPage)
+   0209 0B            [ 6]  333 	dec	bc
+                            334 ;src\menu.c:77: switch (key) 
+   020A 7B            [ 4]  335 	ld	a, e
+   020B D6 1E         [ 7]  336 	sub	a, #0x1e
+   020D 28 17         [12]  337 	jr	Z,00101$
+                            338 ;src\menu.c:89: if (currentIndex >= (currentPage + 1) * FILES_PER_PAGE) {
+   020F 2Ar50r00      [16]  339 	ld	hl, (_currentPage)
+   0212 23            [ 6]  340 	inc	hl
+   0213 E3            [19]  341 	ex	(sp), hl
+                            342 ;src\menu.c:77: switch (key) 
+   0214 7B            [ 4]  343 	ld	a,e
+   0215 FE 1F         [ 7]  344 	cp	a,#0x1f
+   0217 28 64         [12]  345 	jr	Z,00106$
+   0219 FE 4B         [ 7]  346 	cp	a,#0x4b
+   021B CAr0Dr03      [10]  347 	jp	Z,00114$
+   021E D6 4D         [ 7]  348 	sub	a, #0x4d
+   0220 CArD2r02      [10]  349 	jp	Z,00111$
+   0223 C3r33r03      [10]  350 	jp	00117$
+                            351 ;src\menu.c:79: case 30: // Up arrow
+   0226                     352 00101$:
+                            353 ;src\menu.c:80: if (currentIndex > 0) currentIndex--;
+   0226 AF            [ 4]  354 	xor	a, a
+   0227 FD 21r52r00   [14]  355 	ld	iy, #_currentIndex
+   022B FD BE 00      [19]  356 	cp	a, 0 (iy)
+   022E FD 9E 01      [19]  357 	sbc	a, 1 (iy)
+   0231 E2r36r02      [10]  358 	jp	PO, 00182$
+   0234 EE 80         [ 7]  359 	xor	a, #0x80
+   0236                     360 00182$:
+   0236 F2r40r02      [10]  361 	jp	P, 00103$
+   0239 2Ar52r00      [16]  362 	ld	hl, (_currentIndex)
+   023C 2B            [ 6]  363 	dec	hl
+   023D 22r52r00      [16]  364 	ld	(_currentIndex), hl
+   0240                     365 00103$:
+                            366 ;src\menu.c:81: if (currentIndex < currentPage * FILES_PER_PAGE) {
+   0240 ED 5Br50r00   [20]  367 	ld	de, (_currentPage)
+   0244 6B            [ 4]  368 	ld	l, e
+   0245 62            [ 4]  369 	ld	h, d
+   0246 29            [11]  370 	add	hl, hl
+   0247 29            [11]  371 	add	hl, hl
+   0248 29            [11]  372 	add	hl, hl
+   0249 19            [11]  373 	add	hl, de
+   024A 29            [11]  374 	add	hl, hl
+   024B 19            [11]  375 	add	hl, de
+   024C EB            [ 4]  376 	ex	de, hl
+   024D FD 21r52r00   [14]  377 	ld	iy, #_currentIndex
+   0251 FD 7E 00      [19]  378 	ld	a, 0 (iy)
+   0254 93            [ 4]  379 	sub	a, e
+   0255 FD 7E 01      [19]  380 	ld	a, 1 (iy)
+   0258 9A            [ 4]  381 	sbc	a, d
+   0259 E2r5Er02      [10]  382 	jp	PO, 00183$
+   025C EE 80         [ 7]  383 	xor	a, #0x80
+   025E                     384 00183$:
+   025E F2r65r02      [10]  385 	jp	P, 00105$
+                            386 ;src\menu.c:82: currentPage--;
+   0261 ED 43r50r00   [20]  387 	ld	(_currentPage), bc
+   0265                     388 00105$:
+                            389 ;src\menu.c:84: Locate(28, 23);
+   0265 11 1C 17      [10]  390 	ld	de, #0x171c
+   0268 D5            [11]  391 	push	de
+   0269 CDr00r00      [17]  392 	call	_Locate
+   026C F1            [10]  393 	pop	af
+                            394 ;src\menu.c:85: printf("Index: %2d", currentIndex);
+   026D 2Ar52r00      [16]  395 	ld	hl, (_currentIndex)
+   0270 E5            [11]  396 	push	hl
+   0271 21r64r03      [10]  397 	ld	hl, #___str_8
+   0274 E5            [11]  398 	push	hl
+   0275 CDr00r00      [17]  399 	call	_printf
+   0278 F1            [10]  400 	pop	af
+   0279 F1            [10]  401 	pop	af
+                            402 ;src\menu.c:86: break;
+   027A C3r33r03      [10]  403 	jp	00117$
+                            404 ;src\menu.c:87: case 31: // Down arrow
+   027D                     405 00106$:
+                            406 ;src\menu.c:88: if (currentIndex < FILES_PER_PAGE - 1) currentIndex++;
+   027D FD 21r52r00   [14]  407 	ld	iy, #_currentIndex
+   0281 FD 7E 00      [19]  408 	ld	a, 0 (iy)
+   0284 D6 12         [ 7]  409 	sub	a, #0x12
+   0286 FD 7E 01      [19]  410 	ld	a, 1 (iy)
+   0289 17            [ 4]  411 	rla
+   028A 3F            [ 4]  412 	ccf
+   028B 1F            [ 4]  413 	rra
+   028C DE 80         [ 7]  414 	sbc	a, #0x80
+   028E 30 07         [12]  415 	jr	NC,00108$
+   0290 2Ar52r00      [16]  416 	ld	hl, (_currentIndex)
+   0293 23            [ 6]  417 	inc	hl
+   0294 22r52r00      [16]  418 	ld	(_currentIndex), hl
+   0297                     419 00108$:
+                            420 ;src\menu.c:89: if (currentIndex >= (currentPage + 1) * FILES_PER_PAGE) {
+   0297 C1            [10]  421 	pop	bc
+   0298 C5            [11]  422 	push	bc
+   0299 69            [ 4]  423 	ld	l, c
+   029A 60            [ 4]  424 	ld	h, b
+   029B 29            [11]  425 	add	hl, hl
+   029C 29            [11]  426 	add	hl, hl
+   029D 29            [11]  427 	add	hl, hl
+   029E 09            [11]  428 	add	hl, bc
+   029F 29            [11]  429 	add	hl, hl
+   02A0 09            [11]  430 	add	hl, bc
+   02A1 EB            [ 4]  431 	ex	de, hl
+   02A2 FD 21r52r00   [14]  432 	ld	iy, #_currentIndex
+   02A6 FD 7E 00      [19]  433 	ld	a, 0 (iy)
+   02A9 93            [ 4]  434 	sub	a, e
+   02AA FD 7E 01      [19]  435 	ld	a, 1 (iy)
+   02AD 9A            [ 4]  436 	sbc	a, d
+   02AE E2rB3r02      [10]  437 	jp	PO, 00184$
+   02B1 EE 80         [ 7]  438 	xor	a, #0x80
+   02B3                     439 00184$:
+   02B3 FArBBr02      [10]  440 	jp	M, 00110$
+                            441 ;src\menu.c:90: currentPage++;
+   02B6 E1            [10]  442 	pop	hl
+   02B7 E5            [11]  443 	push	hl
+   02B8 22r50r00      [16]  444 	ld	(_currentPage), hl
+   02BB                     445 00110$:
+                            446 ;src\menu.c:92: Locate(28, 23);
+   02BB 11 1C 17      [10]  447 	ld	de, #0x171c
+   02BE D5            [11]  448 	push	de
+   02BF CDr00r00      [17]  449 	call	_Locate
+   02C2 F1            [10]  450 	pop	af
+                            451 ;src\menu.c:93: printf("Index: %2d", currentIndex);
+   02C3 2Ar52r00      [16]  452 	ld	hl, (_currentIndex)
+   02C6 E5            [11]  453 	push	hl
+   02C7 21r64r03      [10]  454 	ld	hl, #___str_8
+   02CA E5            [11]  455 	push	hl
+   02CB CDr00r00      [17]  456 	call	_printf
+   02CE F1            [10]  457 	pop	af
+   02CF F1            [10]  458 	pop	af
+                            459 ;src\menu.c:94: break;
+   02D0 18 61         [12]  460 	jr	00117$
+                            461 ;src\menu.c:95: case 0x4D: // Right arrow
+   02D2                     462 00111$:
+                            463 ;src\menu.c:96: if (currentPage < (totalFiles - 1) / FILES_PER_PAGE) {
+   02D2 ED 4Br54r00   [20]  464 	ld	bc, (_totalFiles)
+   02D6 0B            [ 6]  465 	dec	bc
+   02D7 21 13 00      [10]  466 	ld	hl, #0x0013
+   02DA E5            [11]  467 	push	hl
+   02DB C5            [11]  468 	push	bc
+   02DC CDr00r00      [17]  469 	call	__divsint
+   02DF F1            [10]  470 	pop	af
+   02E0 F1            [10]  471 	pop	af
+   02E1 4D            [ 4]  472 	ld	c, l
+   02E2 44            [ 4]  473 	ld	b, h
+   02E3 FD 21r50r00   [14]  474 	ld	iy, #_currentPage
+   02E7 FD 7E 00      [19]  475 	ld	a, 0 (iy)
+   02EA 91            [ 4]  476 	sub	a, c
+   02EB FD 7E 01      [19]  477 	ld	a, 1 (iy)
+   02EE 98            [ 4]  478 	sbc	a, b
+   02EF E2rF4r02      [10]  479 	jp	PO, 00185$
+   02F2 EE 80         [ 7]  480 	xor	a, #0x80
+   02F4                     481 00185$:
+   02F4 F2r33r03      [10]  482 	jp	P, 00117$
+                            483 ;src\menu.c:97: currentPage++;
+   02F7 E1            [10]  484 	pop	hl
+   02F8 E5            [11]  485 	push	hl
+   02F9 22r50r00      [16]  486 	ld	(_currentPage), hl
+                            487 ;src\menu.c:98: currentIndex = currentPage * FILES_PER_PAGE;
+   02FC ED 4Br50r00   [20]  488 	ld	bc, (_currentPage)
+   0300 69            [ 4]  489 	ld	l, c
+   0301 60            [ 4]  490 	ld	h, b
+   0302 29            [11]  491 	add	hl, hl
+   0303 29            [11]  492 	add	hl, hl
+   0304 29            [11]  493 	add	hl, hl
+   0305 09            [11]  494 	add	hl, bc
+   0306 29            [11]  495 	add	hl, hl
+   0307 09            [11]  496 	add	hl, bc
+   0308 22r52r00      [16]  497 	ld	(_currentIndex), hl
+                            498 ;src\menu.c:100: break;
+   030B 18 26         [12]  499 	jr	00117$
+                            500 ;src\menu.c:101: case 0x4B: // Left arrow
+   030D                     501 00114$:
+                            502 ;src\menu.c:102: if (currentPage > 0) {
+   030D AF            [ 4]  503 	xor	a, a
+   030E FD 21r50r00   [14]  504 	ld	iy, #_currentPage
+   0312 FD BE 00      [19]  505 	cp	a, 0 (iy)
+   0315 FD 9E 01      [19]  506 	sbc	a, 1 (iy)
+   0318 E2r1Dr03      [10]  507 	jp	PO, 00186$
+   031B EE 80         [ 7]  508 	xor	a, #0x80
+   031D                     509 00186$:
+   031D F2r33r03      [10]  510 	jp	P, 00117$
+                            511 ;src\menu.c:103: currentPage--;
+   0320 ED 43r50r00   [20]  512 	ld	(_currentPage), bc
+                            513 ;src\menu.c:104: currentIndex = currentPage * FILES_PER_PAGE;
+   0324 ED 4Br50r00   [20]  514 	ld	bc, (_currentPage)
+   0328 69            [ 4]  515 	ld	l, c
+   0329 60            [ 4]  516 	ld	h, b
+   032A 29            [11]  517 	add	hl, hl
+   032B 29            [11]  518 	add	hl, hl
+   032C 29            [11]  519 	add	hl, hl
+   032D 09            [11]  520 	add	hl, bc
+   032E 29            [11]  521 	add	hl, hl
+   032F 09            [11]  522 	add	hl, bc
+   0330 22r52r00      [16]  523 	ld	(_currentIndex), hl
+                            524 ;src\menu.c:107: }
+   0333                     525 00117$:
+                            526 ;src\menu.c:108: Locate(0, currentIndex + 2);
+   0333 3Ar52r00      [13]  527 	ld	a,(#_currentIndex + 0)
+   0336 C6 02         [ 7]  528 	add	a, #0x02
+   0338 F5            [11]  529 	push	af
+   0339 33            [ 6]  530 	inc	sp
+   033A AF            [ 4]  531 	xor	a, a
+   033B F5            [11]  532 	push	af
+   033C 33            [ 6]  533 	inc	sp
+   033D CDr00r00      [17]  534 	call	_Locate
+                            535 ;src\menu.c:109: printf(">");
+   0340 21r6Fr03      [10]  536 	ld	hl, #___str_9
+   0343 E3            [19]  537 	ex	(sp),hl
+   0344 CDr00r00      [17]  538 	call	_printf
+   0347 F1            [10]  539 	pop	af
+                            540 ;src\menu.c:110: Locate(0, currentIndex + 2);
+   0348 3Ar52r00      [13]  541 	ld	a,(#_currentIndex + 0)
+   034B C6 02         [ 7]  542 	add	a, #0x02
+   034D F5            [11]  543 	push	af
+   034E 33            [ 6]  544 	inc	sp
+   034F AF            [ 4]  545 	xor	a, a
+   0350 F5            [11]  546 	push	af
+   0351 33            [ 6]  547 	inc	sp
+   0352 CDr00r00      [17]  548 	call	_Locate
+   0355 F1            [10]  549 	pop	af
+                            550 ;src\menu.c:112: }
+   0356 C3rCEr01      [10]  551 	jp	00119$
+   0359                     552 ___str_6:
+   0359 4B 65 79 3A 20 25   553 	.ascii "Key: %3d"
+        33 64
+   0361 00                  554 	.db 0x00
+   0362                     555 ___str_7:
+   0362 20                  556 	.ascii " "
+   0363 00                  557 	.db 0x00
+   0364                     558 ___str_8:
+   0364 49 6E 64 65 78 3A   559 	.ascii "Index: %2d"
+        20 25 32 64
+   036E 00                  560 	.db 0x00
+   036F                     561 ___str_9:
+   036F 3E                  562 	.ascii ">"
+   0370 00                  563 	.db 0x00
+                            564 ;src\menu.c:117: void main() {
+                            565 ;	---------------------------------
+                            566 ; Function main
+                            567 ; ---------------------------------
+   0371                     568 _main::
+                            569 ;src\menu.c:118: currentPage = 0;
+   0371 21 00 00      [10]  570 	ld	hl, #0x0000
+   0374 22r50r00      [16]  571 	ld	(_currentPage), hl
+                            572 ;src\menu.c:119: currentIndex = 0;
+   0377 2E 00         [ 7]  573 	ld	l, #0x00
+   0379 22r52r00      [16]  574 	ld	(_currentIndex), hl
+                            575 ;src\menu.c:120: totalFiles = 20; // Total of files stored on the flash
+   037C 2E 14         [ 7]  576 	ld	l, #0x14
+   037E 22r54r00      [16]  577 	ld	(_totalFiles), hl
+                            578 ;src\menu.c:122: game[0] =  "Metal Gear          ";    mapp[0] = "Konami";
+   0381 21r77r04      [10]  579 	ld	hl, #___str_10
+   0384 22r00r00      [16]  580 	ld	(_game), hl
+   0387 21r8Cr04      [10]  581 	ld	hl, #___str_11
+   038A 22r28r00      [16]  582 	ld	(_mapp), hl
+                            583 ;src\menu.c:123: game[1] =  "Nemesis             ";    mapp[1] = "Konami";
+   038D 21r93r04      [10]  584 	ld	hl, #___str_12
+   0390 22r02r00      [16]  585 	ld	((_game + 0x0002)), hl
+   0393 21r8Cr04      [10]  586 	ld	hl, #___str_11
+   0396 22r2Ar00      [16]  587 	ld	((_mapp + 0x0002)), hl
+                            588 ;src\menu.c:124: game[2] =  "Contra              ";    mapp[2] = "Konami";
+   0399 21rA8r04      [10]  589 	ld	hl, #___str_13
+   039C 22r04r00      [16]  590 	ld	((_game + 0x0004)), hl
+   039F 21r8Cr04      [10]  591 	ld	hl, #___str_11
+   03A2 22r2Cr00      [16]  592 	ld	((_mapp + 0x0004)), hl
+                            593 ;src\menu.c:125: game[3] =  "Castlevania         ";    mapp[3] = "Konami";
+   03A5 21rBDr04      [10]  594 	ld	hl, #___str_14
+   03A8 22r06r00      [16]  595 	ld	((_game + 0x0006)), hl
+   03AB 21r8Cr04      [10]  596 	ld	hl, #___str_11
+   03AE 22r2Er00      [16]  597 	ld	((_mapp + 0x0006)), hl
+                            598 ;src\menu.c:126: game[4] =  "Kings Valley II     ";    mapp[4] = "Konami";
+   03B1 21rD2r04      [10]  599 	ld	hl, #___str_15
+   03B4 22r08r00      [16]  600 	ld	((_game + 0x0008)), hl
+   03B7 21r8Cr04      [10]  601 	ld	hl, #___str_11
+   03BA 22r30r00      [16]  602 	ld	((_mapp + 0x0008)), hl
+                            603 ;src\menu.c:127: game[5] =  "Vampire Killer      ";    mapp[5] = "Konami";
+   03BD 21rE7r04      [10]  604 	ld	hl, #___str_16
+   03C0 22r0Ar00      [16]  605 	ld	((_game + 0x000a)), hl
+   03C3 21r8Cr04      [10]  606 	ld	hl, #___str_11
+   03C6 22r32r00      [16]  607 	ld	((_mapp + 0x000a)), hl
+                            608 ;src\menu.c:128: game[6] =  "Snatcher            ";    mapp[6] = "Konami";
+   03C9 21rFCr04      [10]  609 	ld	hl, #___str_17
+   03CC 22r0Cr00      [16]  610 	ld	((_game + 0x000c)), hl
+   03CF 21r8Cr04      [10]  611 	ld	hl, #___str_11
+   03D2 22r34r00      [16]  612 	ld	((_mapp + 0x000c)), hl
+                            613 ;src\menu.c:129: game[7] =  "Galaga              ";    mapp[7] = "32KB";
+   03D5 21r11r05      [10]  614 	ld	hl, #___str_18
+   03D8 22r0Er00      [16]  615 	ld	((_game + 0x000e)), hl
+   03DB 21r26r05      [10]  616 	ld	hl, #___str_19
+   03DE 22r36r00      [16]  617 	ld	((_mapp + 0x000e)), hl
+                            618 ;src\menu.c:130: game[8] =  "Zaxxon              ";    mapp[8] = "32KB";
+   03E1 21r2Br05      [10]  619 	ld	hl, #___str_20
+   03E4 22r10r00      [16]  620 	ld	((_game + 0x0010)), hl
+   03E7 21r26r05      [10]  621 	ld	hl, #___str_19
+   03EA 22r38r00      [16]  622 	ld	((_mapp + 0x0010)), hl
+                            623 ;src\menu.c:131: game[9] =  "Salamander          ";    mapp[9] = "Konami";
+   03ED 21r40r05      [10]  624 	ld	hl, #___str_21
+   03F0 22r12r00      [16]  625 	ld	((_game + 0x0012)), hl
+   03F3 21r8Cr04      [10]  626 	ld	hl, #___str_11
+   03F6 22r3Ar00      [16]  627 	ld	((_mapp + 0x0012)), hl
+                            628 ;src\menu.c:132: game[10] = "Parodius            ";    mapp[10] = "Konami";
+   03F9 21r55r05      [10]  629 	ld	hl, #___str_22
+   03FC 22r14r00      [16]  630 	ld	((_game + 0x0014)), hl
+   03FF 21r8Cr04      [10]  631 	ld	hl, #___str_11
+   0402 22r3Cr00      [16]  632 	ld	((_mapp + 0x0014)), hl
+                            633 ;src\menu.c:133: game[11] = "Knightmare          ";    mapp[11] = "32KB";
+   0405 21r6Ar05      [10]  634 	ld	hl, #___str_23
+   0408 22r16r00      [16]  635 	ld	((_game + 0x0016)), hl
+   040B 21r26r05      [10]  636 	ld	hl, #___str_19
+   040E 22r3Er00      [16]  637 	ld	((_mapp + 0x0016)), hl
+                            638 ;src\menu.c:134: game[12] = "Pippols             ";    mapp[12] = "16KB";
+   0411 21r7Fr05      [10]  639 	ld	hl, #___str_24
+   0414 22r18r00      [16]  640 	ld	((_game + 0x0018)), hl
+   0417 21r94r05      [10]  641 	ld	hl, #___str_25
+   041A 22r40r00      [16]  642 	ld	((_mapp + 0x0018)), hl
+                            643 ;src\menu.c:135: game[13] = "The Maze of Galious ";    mapp[13] = "Konami";
+   041D 21r99r05      [10]  644 	ld	hl, #___str_26
+   0420 22r1Ar00      [16]  645 	ld	((_game + 0x001a)), hl
+   0423 21r8Cr04      [10]  646 	ld	hl, #___str_11
+   0426 22r42r00      [16]  647 	ld	((_mapp + 0x001a)), hl
+                            648 ;src\menu.c:136: game[14] = "Penguin Adventure   ";    mapp[14] = "32KB";
+   0429 21rAEr05      [10]  649 	ld	hl, #___str_27
+   042C 22r1Cr00      [16]  650 	ld	((_game + 0x001c)), hl
+   042F 21r26r05      [10]  651 	ld	hl, #___str_19
+   0432 22r44r00      [16]  652 	ld	((_mapp + 0x001c)), hl
+                            653 ;src\menu.c:137: game[15] = "Space Manbow        ";    mapp[15] = "Konami";
+   0435 21rC3r05      [10]  654 	ld	hl, #___str_28
+   0438 22r1Er00      [16]  655 	ld	((_game + 0x001e)), hl
+   043B 21r8Cr04      [10]  656 	ld	hl, #___str_11
+   043E 22r46r00      [16]  657 	ld	((_mapp + 0x001e)), hl
+                            658 ;src\menu.c:138: game[16] = "Gradius 2           ";    mapp[16] = "Konami";
+   0441 21rD8r05      [10]  659 	ld	hl, #___str_29
+   0444 22r20r00      [16]  660 	ld	((_game + 0x0020)), hl
+   0447 21r8Cr04      [10]  661 	ld	hl, #___str_11
+   044A 22r48r00      [16]  662 	ld	((_mapp + 0x0020)), hl
+                            663 ;src\menu.c:139: game[17] = "TwinBee             ";    mapp[17] = "16KB";
+   044D 21rEDr05      [10]  664 	ld	hl, #___str_30
+   0450 22r22r00      [16]  665 	ld	((_game + 0x0022)), hl
+   0453 21r94r05      [10]  666 	ld	hl, #___str_25
+   0456 22r4Ar00      [16]  667 	ld	((_mapp + 0x0022)), hl
+                            668 ;src\menu.c:140: game[18] = "Zanac               ";    mapp[18] = "32KB";
+   0459 21r02r06      [10]  669 	ld	hl, #___str_31
+   045C 22r24r00      [16]  670 	ld	((_game + 0x0024)), hl
+   045F 21r26r05      [10]  671 	ld	hl, #___str_19
+   0462 22r4Cr00      [16]  672 	ld	((_mapp + 0x0024)), hl
+                            673 ;src\menu.c:141: game[19] = "H.E.R.O.            ";    mapp[19] = "16KB";
+   0465 21r17r06      [10]  674 	ld	hl, #___str_32
+   0468 22r26r00      [16]  675 	ld	((_game + 0x0026)), hl
+   046B 21r94r05      [10]  676 	ld	hl, #___str_25
+   046E 22r4Er00      [16]  677 	ld	((_mapp + 0x0026)), hl
+                            678 ;src\menu.c:144: displayMenu();
+   0471 CDr46r00      [17]  679 	call	_displayMenu
+                            680 ;src\menu.c:145: navigateMenu();
+                            681 ;src\menu.c:146: }
+   0474 C3rCBr01      [10]  682 	jp  _navigateMenu
+   0477                     683 ___str_10:
+   0477 4D 65 74 61 6C 20   684 	.ascii "Metal Gear          "
+        47 65 61 72 20 20
+        20 20 20 20 20 20
+        20 20
+   048B 00                  685 	.db 0x00
+   048C                     686 ___str_11:
+   048C 4B 6F 6E 61 6D 69   687 	.ascii "Konami"
+   0492 00                  688 	.db 0x00
+   0493                     689 ___str_12:
+   0493 4E 65 6D 65 73 69   690 	.ascii "Nemesis             "
+        73 20 20 20 20 20
+        20 20 20 20 20 20
+        20 20
+   04A7 00                  691 	.db 0x00
+   04A8                     692 ___str_13:
+   04A8 43 6F 6E 74 72 61   693 	.ascii "Contra              "
+        20 20 20 20 20 20
+        20 20 20 20 20 20
+        20 20
+   04BC 00                  694 	.db 0x00
+   04BD                     695 ___str_14:
+   04BD 43 61 73 74 6C 65   696 	.ascii "Castlevania         "
+        76 61 6E 69 61 20
+        20 20 20 20 20 20
+        20 20
+   04D1 00                  697 	.db 0x00
+   04D2                     698 ___str_15:
+   04D2 4B 69 6E 67 73 20   699 	.ascii "Kings Valley II     "
+        56 61 6C 6C 65 79
+        20 49 49 20 20 20
+        20 20
+   04E6 00                  700 	.db 0x00
+   04E7                     701 ___str_16:
+   04E7 56 61 6D 70 69 72   702 	.ascii "Vampire Killer      "
+        65 20 4B 69 6C 6C
+        65 72 20 20 20 20
+        20 20
+   04FB 00                  703 	.db 0x00
+   04FC                     704 ___str_17:
+   04FC 53 6E 61 74 63 68   705 	.ascii "Snatcher            "
+        65 72 20 20 20 20
+        20 20 20 20 20 20
+        20 20
+   0510 00                  706 	.db 0x00
+   0511                     707 ___str_18:
+   0511 47 61 6C 61 67 61   708 	.ascii "Galaga              "
+        20 20 20 20 20 20
+        20 20 20 20 20 20
+        20 20
+   0525 00                  709 	.db 0x00
+   0526                     710 ___str_19:
+   0526 33 32 4B 42         711 	.ascii "32KB"
+   052A 00                  712 	.db 0x00
+   052B                     713 ___str_20:
+   052B 5A 61 78 78 6F 6E   714 	.ascii "Zaxxon              "
+        20 20 20 20 20 20
+        20 20 20 20 20 20
+        20 20
+   053F 00                  715 	.db 0x00
+   0540                     716 ___str_21:
+   0540 53 61 6C 61 6D 61   717 	.ascii "Salamander          "
+        6E 64 65 72 20 20
+        20 20 20 20 20 20
+        20 20
+   0554 00                  718 	.db 0x00
+   0555                     719 ___str_22:
+   0555 50 61 72 6F 64 69   720 	.ascii "Parodius            "
+        75 73 20 20 20 20
+        20 20 20 20 20 20
+        20 20
+   0569 00                  721 	.db 0x00
+   056A                     722 ___str_23:
+   056A 4B 6E 69 67 68 74   723 	.ascii "Knightmare          "
+        6D 61 72 65 20 20
+        20 20 20 20 20 20
+        20 20
+   057E 00                  724 	.db 0x00
+   057F                     725 ___str_24:
+   057F 50 69 70 70 6F 6C   726 	.ascii "Pippols             "
+        73 20 20 20 20 20
+        20 20 20 20 20 20
+        20 20
+   0593 00                  727 	.db 0x00
+   0594                     728 ___str_25:
+   0594 31 36 4B 42         729 	.ascii "16KB"
+   0598 00                  730 	.db 0x00
+   0599                     731 ___str_26:
+   0599 54 68 65 20 4D 61   732 	.ascii "The Maze of Galious "
+        7A 65 20 6F 66 20
+        47 61 6C 69 6F 75
+        73 20
+   05AD 00                  733 	.db 0x00
+   05AE                     734 ___str_27:
+   05AE 50 65 6E 67 75 69   735 	.ascii "Penguin Adventure   "
+        6E 20 41 64 76 65
+        6E 74 75 72 65 20
+        20 20
+   05C2 00                  736 	.db 0x00
+   05C3                     737 ___str_28:
+   05C3 53 70 61 63 65 20   738 	.ascii "Space Manbow        "
+        4D 61 6E 62 6F 77
+        20 20 20 20 20 20
+        20 20
+   05D7 00                  739 	.db 0x00
+   05D8                     740 ___str_29:
+   05D8 47 72 61 64 69 75   741 	.ascii "Gradius 2           "
+        73 20 32 20 20 20
+        20 20 20 20 20 20
+        20 20
+   05EC 00                  742 	.db 0x00
+   05ED                     743 ___str_30:
+   05ED 54 77 69 6E 42 65   744 	.ascii "TwinBee             "
+        65 20 20 20 20 20
+        20 20 20 20 20 20
+        20 20
+   0601 00                  745 	.db 0x00
+   0602                     746 ___str_31:
+   0602 5A 61 6E 61 63 20   747 	.ascii "Zanac               "
+        20 20 20 20 20 20
+        20 20 20 20 20 20
+        20 20
+   0616 00                  748 	.db 0x00
+   0617                     749 ___str_32:
+   0617 48 2E 45 2E 52 2E   750 	.ascii "H.E.R.O.            "
+        4F 2E 20 20 20 20
+        20 20 20 20 20 20
+        20 20
+   062B 00                  751 	.db 0x00
+                            752 	.area _CODE
+                            753 	.area _INITIALIZER
+                            754 	.area _CABS (ABS)
