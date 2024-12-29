@@ -185,8 +185,6 @@ int main()
     }
 
     fclose(final_output_file);
-
     printf("\nFinal binary file '%s' created successfully.\n", COMBINED_FILE);
-
     return 0;
 }
