@@ -1,0 +1,25 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "echo",
+			"type": "shell",
+			"command": "echo Hello"
+		},
+		{
+			"type": "shell",
+			"label": "build",
+			"command": "make",
+			"args": [
+				"all"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			]
+		}
+	]
+}

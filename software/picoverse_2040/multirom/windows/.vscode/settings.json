@@ -1,0 +1,13 @@
+{
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "c:\\Users\\Cristiano\\OneDrive\\Personal\\11. Electronics\\PicoVerse\\GitHub\\msx-picoverse\\software\\picoverse_2040\\multirom\\windows\\build",
+            "binaryPath": "c:\\Users\\Cristiano\\OneDrive\\Personal\\11. Electronics\\PicoVerse\\GitHub\\msx-picoverse\\software\\picoverse_2040\\multirom\\windows\\build\\multirom.exe",
+            "binaryArgs": []
+        }
+    ],
+    "files.associations": {
+        "stdint.h": "c",
+        "dirent.h": "c"
+    }
+}

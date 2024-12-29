@@ -3,10 +3,10 @@ ASM = sdasz80
 PLATFORM = -mz80
 HEXBIN = hex2bin
 
-FUSIONINC = C:\DevArea\libraries\fusion-c\include
-FUSIONHEADER = C:\DevArea\libraries\fusion-c\header
-FUSIONLIBDIR = C:\DevArea\libraries\fusion-c\lib
-FUSIONLIB = $(FUSIONLIBDIR)\fusion_min_printf.lib
+FUSIONINC = /DevArea/libraries/fusion-c/include
+FUSIONHEADER = /DevArea/libraries/fusion-c/header
+FUSIONLIBDIR = /DevArea/libraries/fusion-c/lib
+FUSIONLIB = $(FUSIONLIBDIR)/fusion_min_printf.lib
 
 SRCDIR = src
 BINDIR = build
@@ -18,37 +18,42 @@ DISDIR = dist
 #ADDR_CODE = 0x4020
 #ADDR_DATA = 0xC000
 # 32K ROM 4000H
-CRT0 = $(FUSIONINC)\crt0_MSX32k_ROM4000.rel
+CRT0 = $(FUSIONINC)/crt0_MSX32k_ROM4000.rel
 ADDR_CODE = 0x4050
 ADDR_DATA = 0xC000
 
 VERBOSE = --verbose
 CCFLAGS = $(VERBOSE) --code-loc $(ADDR_CODE) --data-loc $(ADDR_DATA) --disable-warning 196 
+DEBUGFLAGS =-g -DDEBUG
+ifdef DEBUG
+CCFLAGS += $(DEBUGFLAGS)
+endif
+
 SOURCES = menu.c
 OUTFILE = menu.rom
 
 all: clean compile package
 
-compile: $(BINDIR)\$(OUTFILE)
+compile: $(BINDIR)/$(OUTFILE)
 
-$(BINDIR)\menu.ihx: $(SRCDIR)\$(SOURCES)
+$(BINDIR)/menu.ihx: $(SRCDIR)/$(SOURCES)
 	@echo "Compiling $@"
 	$(CC) $(CCFLAGS) $(PLATFORM) --use-stdout --no-std-crt0 $(CRT0) $(FUSIONLIB) -I $(FUSIONHEADER) $< -o $@ 
 
-$(BINDIR)\$(OUTFILE): $(BINDIR)\menu.ihx
+$(BINDIR)/$(OUTFILE): $(BINDIR)/menu.ihx
 	@echo "Building $(OUTFILE)..."
 # 16K ROM 4000H
-#	@$(HEXBIN) -e ROM -l 0x4000 $(BINDIR)\$(OUTFILE) $< 
+#	@$(HEXBIN) -e ROM -l 0x4000 $(BINDIR)/$(OUTFILE) $< 
 # 32K ROM 4000H
-	@$(HEXBIN) -e ROM -s 0x4000 -l 0x8000 $(BINDIR)\$(OUTFILE) $<
+	@$(HEXBIN) -e ROM -s 0x4000 -l 0x8000 $(BINDIR)/$(OUTFILE) $<
 
 package:
 	@echo "Packaging..."
-	copy $(BINDIR)\$(OUTFILE) $(DISDIR)\$(OUTFILE)
+	cp $(BINDIR)/$(OUTFILE) $(DISDIR)/$(OUTFILE)
 
 clean:
 		@echo "Cleaning ...."
-		del /f $(BINDIR)\*.asm $(BINDIR)\*.bin $(BINDIR)\*.cdb $(BINDIR)\*.ihx $(BINDIR)\*.lk $(BINDIR)\*.lst \
-			$(BINDIR)\*.map $(BINDIR)\*.mem $(BINDIR)\*.omf $(BINDIR)\*.rst $(BINDIR)\*.rel $(BINDIR)\*.sym \
-			$(BINDIR)\*.noi $(BINDIR)\*.hex $(BINDIR)\*.lnk $(BINDIR)\*.dep
-		del /f $(BINDIR)\$(OUTFILE)
+		rm -f $(BINDIR)/*.asm $(BINDIR)/*.bin $(BINDIR)/*.cdb $(BINDIR)/*.ihx $(BINDIR)/*.lk $(BINDIR)/*.lst \
+			$(BINDIR)/*.map $(BINDIR)/*.mem $(BINDIR)/*.omf $(BINDIR)/*.rst $(BINDIR)/*.rel $(BINDIR)/*.sym \
+			$(BINDIR)/*.noi $(BINDIR)/*.hex $(BINDIR)/*.lnk $(BINDIR)/*.dep
+		rm -f $(BINDIR)/$(OUTFILE)

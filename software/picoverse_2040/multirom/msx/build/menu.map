@@ -21,63 +21,72 @@ Area                                    Addr        Size        Decimal Bytes (A
      00000000  s__HEADER                       
      00000000  s__HEADER0                      
      0000004B  l__HEADER0                      
-     00000056  l__DATA                         
-     0000140D  l__CODE                         
+     00000C08  l__DATA                         
+     00001880  l__CODE                         
      00004050  s__CODE                         
      0000C000  s__DATA                         
-     0000C056  s__GSFINAL                      
-     0000C056  s__GSINIT                       
-     0000C056  s__HOME                         
-     0000C056  s__INITIALIZED                  
-     0000C056  s__INITIALIZER                  
+     0000CC08  s__GSFINAL                      
+     0000CC08  s__GSINIT                       
+     0000CC08  s__HOME                         
+     0000CC08  s__INITIALIZED                  
+     0000CC08  s__INITIALIZER                  
 
 ASxxxx Linker V03.00 + NoICE + sdld,  page 2.
 Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-_CODE                               00004050    0000140D =        5133. bytes (REL,CON)
+_CODE                               00004050    00001880 =        6272. bytes (REL,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
      00004050  _putchar                           menu
-     00004096  _displayMenu                       menu
-     0000421B  _navigateMenu                      menu
-     000043C1  _main                              menu
-     0000467C  _Cls                               
-     0000468D  _WaitKey                           
-     000046AE  _vprintf                           vprintf
-     000046CE  _printf                            vprintf
-     000046EB  _Locate                            
-     0000470A  _Screen                            
-     0000472B  __divsint                          
-     00004734  __divschar                         
-     0000473B  __div8                             
-     0000473F  __div_signexte                     
-     00004743  __div16                            
-     00004769  __get_remainder                    
-     0000488E  __print_format                     printf_large
-     0000540C  __divuint                          
-     00005414  __divuchar                         
-     0000541B  __divu8                            
-     0000541E  __divu16                           
-     0000544D  ___sdcc_call_hl                    
-     0000544E  _strlen                            
+     00004096  _mapper_description                menu
+     000040F9  _displayMenu                       menu
+     000042E3  _helpMenu                          menu
+     000044DC  _navigateMenu                      menu
+     000046BA  _main                              menu
+     00004AA7  _Cls                               
+     00004AB8  _WaitKey                           
+     00004AD7  _PrintChar                         
+     00004AE9  _bchput                            
+     00004B08  _vprintf                           vprintf
+     00004B28  _printf                            vprintf
+     00004B45  _Locate                            
+     00004B64  __modschar                         
+     00004B71  __modsint                          
+     00004B7D  _Screen                            
+     00004CB9  __print_format                     printf_large
+     00005837  __divsint                          
+     00005840  __divschar                         
+     00005847  __div8                             
+     0000584B  __div_signexte                     
+     0000584F  __div16                            
+     00005875  __get_remainder                    
+     0000587F  __divuint                          
+     00005887  __divuchar                         
+     0000588E  __divu8                            
+     00005891  __divu16                           
+     000058C0  ___sdcc_call_hl                    
+     000058C1  _strlen                            
 
 ASxxxx Linker V03.00 + NoICE + sdld,  page 3.
 Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-_DATA                               0000C000    00000056 =          86. bytes (REL,CON)
+_DATA                               0000C000    00000C08 =        3080. bytes (REL,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
      0000C000  _game                              menu
-     0000C028  _mapp                              menu
-     0000C050  _currentPage                       menu
-     0000C052  _currentIndex                      menu
-     0000C054  _totalFiles                        menu
+     0000C200  _mapp                              menu
+     0000C400  _offset                            menu
+     0000C800  _size                              menu
+     0000CC00  _currentPage                       menu
+     0000CC02  _totalPages                        menu
+     0000CC04  _currentIndex                      menu
+     0000CC06  _totalFiles                        menu
 
 ASxxxx Linker V03.00 + NoICE + sdld,  page 4.
 Hexadecimal  [32-Bits]
@@ -94,27 +103,31 @@ _HEADER0                            00000000    0000004B =          75. bytes (A
 
 Files Linked                              [ module(s) ]
 
-build\menu.rel                            [ menu ]
-C:\DevArea\libraries\fusion-c\include\crt0_MSX32k_ROM4000.rel
+build/menu.rel                            [ menu ]
+/DevArea/libraries/fusion-c/include/crt0_MSX32k_ROM4000.rel
                                           [  ]
 
 
 Libraries Linked                          [ object file ]
 
-C:\DevArea\libraries\fusion-c\lib\fusion_min_printf.lib
+/DevArea/libraries/fusion-c/lib/fusion_min_printf.lib
                                           [ cls.rel ]
-C:\DevArea\libraries\fusion-c\lib\fusion_min_printf.lib
+/DevArea/libraries/fusion-c/lib/fusion_min_printf.lib
                                           [ waitkey.rel ]
+/DevArea/libraries/fusion-c/lib/fusion_min_printf.lib
+                                          [ printchar.rel ]
 C:\Program Files\SDCC\bin\..\lib\z80/z80.lib
                                           [ vprintf.rel ]
-C:\DevArea\libraries\fusion-c\lib\fusion_min_printf.lib
+/DevArea/libraries/fusion-c/lib/fusion_min_printf.lib
                                           [ locate.rel ]
-C:\DevArea\libraries\fusion-c\lib\fusion_min_printf.lib
+C:\Program Files\SDCC\bin\..\lib\z80/z80.lib
+                                          [ modsigned.rel ]
+/DevArea/libraries/fusion-c/lib/fusion_min_printf.lib
                                           [ screen.rel ]
 C:\Program Files\SDCC\bin\..\lib\z80/z80.lib
-                                          [ divsigned.rel ]
-C:\Program Files\SDCC\bin\..\lib\z80/z80.lib
                                           [ printf_large.rel ]
+C:\Program Files\SDCC\bin\..\lib\z80/z80.lib
+                                          [ divsigned.rel ]
 C:\Program Files\SDCC\bin\..\lib\z80/z80.lib
                                           [ divunsigned.rel ]
 C:\Program Files\SDCC\bin\..\lib\z80/z80.lib
