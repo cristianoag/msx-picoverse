@@ -6,9 +6,10 @@ This project aspires to enhance the MSX experience by enabling users to load ROM
 
 ## Images
 
-| PicoVerse 2040 MultiROM Menu | Prototype PCB (front) | Prototype PCB (back) |
+| Prototype PCB (front) | Prototype PCB (back) | Kicad 3D Render |
 |---------|---------|---------|
-| ![Image 1](images/2024-12-29_21-16.png) | ![Image 2](images/20241230_001854885_iOS.jpg) | ![Image 3](images/20241230_001901504_iOS.jpg) |
+| ![Image 1](images/20241230_001854885_iOS.jpg) | ![Image 2](images/20241230_001901504_iOS.jpg) | ![Image 2](images/2024-12-30_20-07.png) |
+
 ## Hardware
 
 The available versions for the cartrdige are divided into two categories: 
@@ -51,6 +52,10 @@ which typically expose only 26 GPIO pins. Currently, the following boards are su
 * Olimex Pico2 XXL - Not released yet!
 
 ## Software
+
+| PicoVerse 2040 MultiROM Menu | 
+|---------|
+| <img src="images/2024-12-30_20-05.png" width="300"/> | 
 
 The software for the PicoVerse cartridges is being developed. The software will be fully open-sourced. 
 
