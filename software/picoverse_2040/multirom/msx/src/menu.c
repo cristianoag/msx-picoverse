@@ -54,7 +54,7 @@ int putchar (int character)
     add     hl, sp   ;Bypass the return address of the function 
     ld     a, (hl)
 
-    ld     iy,(#BIOS_EXPTBL-1)       ;BIOS slot in iyh
+    ld     iy,(#BIOS_EXPTBL-1)  ;BIOS slot in iyh
     push ix
     ld     ix,#BIOS_CHPUT       ;address of BIOS routine
     call   BIOS_CALSLT          ;interslot call
@@ -63,6 +63,44 @@ int putchar (int character)
 
     return character;
 }
+
+/*
+void invert_chars()
+{
+    __asm
+    org     0E000H
+    ld      hl, 0BEFH
+    ld      de, 0EEFH
+    ld      bc, 02F0H
+    
+    LOOP: 
+    call    RDCHAR
+    xor     0FFH
+    ex      de,hl
+    call    wrchar
+    ex      de,hl
+    dec     hl
+    dec     de
+    dec     bc
+    ld      a, b
+    or      c
+    jp      nz, loop
+    ret
+
+    WRCHAR: 
+    ld      iy,(#BIOS_EXPTBL-1)
+    ld      ix, #BIOS_WRTVRM
+    call    BIOS_CALSLT
+    ret
+
+    RDCHAR: 
+    ld      iy,(#BIOS_EXPTBL-1)
+    ld      ix, #BIOS_RDVRM
+    call    BIOS_CALSLT
+    ret
+    __endasm;
+
+} */
 
 // Function to return the description of the mapper
 // 1: 16KB, 2: 32KB, 3: Konami, 4: Linear0
@@ -76,6 +114,7 @@ char* mapper_description(int number) {
 void displayMenu() {
     
     Screen(0); // Set the screen mode
+    //invert_chars(); // Invert the characters
     Cls(); // Clear the screen
 
     // header
