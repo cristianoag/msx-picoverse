@@ -6,7 +6,7 @@ This project aspires to enhance the MSX experience by enabling users to load ROM
 
 ## Images
 
-| PicoVerse MultiROM Menu | Prototype PCB (front) | Prototype PCB (back) |
+| PicoVerse 2040 MultiROM Menu | Prototype PCB (front) | Prototype PCB (back) |
 |---------|---------|---------|
 | ![Image 1](images/2024-12-29_21-16.png) | ![Image 2](images/20241230_001854885_iOS.jpg) | ![Image 3](images/20241230_001901504_iOS.jpg) |
 ## Hardware
