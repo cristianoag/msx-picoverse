@@ -50,57 +50,62 @@ int totalFiles; // Total files
 int putchar (int character)
 {
     __asm
-    ld      hl, #2 
-    add     hl, sp   ;Bypass the return address of the function 
-    ld     a, (hl)
+    ld      hl, #2              ;Get the return address of the function
+    add     hl, sp              ;Bypass the return address of the function 
+    ld     a, (hl)              ;Get the character to print
 
     ld     iy,(#BIOS_EXPTBL-1)  ;BIOS slot in iyh
-    push ix
+    push ix                     ;save ix
     ld     ix,#BIOS_CHPUT       ;address of BIOS routine
     call   BIOS_CALSLT          ;interslot call
-    pop ix
+    pop ix                      ;restore ix
     __endasm;
 
     return character;
 }
 
-/*
-void invert_chars()
+// Function to invert the characters in the character table
+// This function will invert the characters from startChar to endChar in the character table
+void invert_chars(unsigned char startChar, unsigned char endChar)
 {
-    __asm
-    org     0E000H
-    ld      hl, 0BEFH
-    ld      de, 0EEFH
-    ld      bc, 02F0H
-    
-    LOOP: 
-    call    RDCHAR
-    xor     0FFH
-    ex      de,hl
-    call    wrchar
-    ex      de,hl
-    dec     hl
-    dec     de
-    dec     bc
-    ld      a, b
-    or      c
-    jp      nz, loop
-    ret
+    unsigned int srcAddress, dstAddress;
+    unsigned char patternByte;
+    unsigned char i, c;
 
-    WRCHAR: 
-    ld      iy,(#BIOS_EXPTBL-1)
-    ld      ix, #BIOS_WRTVRM
-    call    BIOS_CALSLT
-    ret
+    for (c = startChar; c <= endChar; c++)
+    {
+        // Each character has 8 bytes in the pattern table.
+        srcAddress  = 0x0800 + ((unsigned int)c * 8);
+        // Calculate destination address (shift by +95 bytes)
+        dstAddress = srcAddress + (96*8);
 
-    RDCHAR: 
-    ld      iy,(#BIOS_EXPTBL-1)
-    ld      ix, #BIOS_RDVRM
-    call    BIOS_CALSLT
-    ret
-    __endasm;
+        // Flip all 8 bytes that define this character.
+        for (i = 0; i < 8; i++)
+        {
+            patternByte = Vpeek(srcAddress + i);
+            patternByte = ~patternByte;           // CPL (bitwise NOT)
+            Vpoke(dstAddress  + i, patternByte);
+        }
+    }
+}
 
-} */
+void print_str_normal(const char *str) 
+{
+    while (*str) { // Loop through each character in the string
+        char modifiedChar = *str - 96; // Apply the offset to the character
+        PrintChar(modifiedChar); // Print the modified character
+        str++; // Move to the next character in the string
+    }
+}
+
+void print_str_inverted(const char *str) 
+{
+    while (*str) {// Loop through each character in the string
+        int modifiedChar = *str + 96; // Apply the offset to the character
+        PrintChar(modifiedChar); // Print the modified character
+        str++; // Move to the next character in the string
+    }
+}
 
 // Function to return the description of the mapper
 // 1: 16KB, 2: 32KB, 3: Konami, 4: Linear0
@@ -114,7 +119,7 @@ char* mapper_description(int number) {
 void displayMenu() {
     
     Screen(0); // Set the screen mode
-    //invert_chars(); // Invert the characters
+    invert_chars(32, 126);
     Cls(); // Clear the screen
 
     // header
@@ -135,6 +140,36 @@ void displayMenu() {
     printf("Page %02d/%02d     [H - Help] [C - Config]",currentPage, totalPages); // Print the page number and the help and config options
     Locate(0, (currentIndex%FILES_PER_PAGE) + 2); // Position the cursor on the selected file
     printf(">"); // Print the cursor
+    print_str_inverted(game[currentIndex%FILES_PER_PAGE]);
+}
+
+   
+// Debug - Display the MSX character table
+void charMap() {
+    int row;
+    int col;
+    row = 11;
+    col = 0;
+    // Loop through all 256 characters in the MSX character table
+    for (int i = 0; i < 256; i++) 
+    {
+        // Set the cursor position
+        Locate(col, row);
+        // Print the character
+        if (i < 32) {
+            PrintChar('#');
+        } else {
+            PrintChar(i);
+        }
+        // Move to the next column
+        col++;
+        // If we reach the end of the line, go to the next row
+        if (col >= 40) {
+            col = 0;
+            row++;
+        }
+    }
+    
 }
 
 void helpMenu()
@@ -153,37 +188,21 @@ void helpMenu()
     Locate(0, 5);
     printf("Press [C] to display the config page.");
     Locate(0, 7);
-
-    // Debug - Display the MSX character table
-    // Variables for looping and positioning
-    int row;
-    int col;
-    row = 8;
-    col = 0;
-    // Loop through all 256 characters in the MSX character table
-    for (int i = 33; i < 256; i++) 
-    {
-        // Set the cursor position
-        Locate(col, row);
-        // Print the character
-        PrintChar(i);
-        // Move to the next column
-        col++;
-        // If we reach the end of the line, go to the next row
-        if (col >= 40) {
-            col = 0;
-            row++;
-        }
-    }
+    printf("32="); PrintChar(32); 
+    Locate(0, 8);
+    printf("128=");PrintChar(128); 
+    Locate(0, 10);
+    charMap();
 
     Locate(0, 21);
     printf("--------------------------------------");
     Locate(0, 22);
     printf("Press any key to return to the menu...");
-    WaitKey();
+    InputChar();
     displayMenu();
     navigateMenu();
 }
+
 
 void navigateMenu() 
 {
@@ -196,7 +215,8 @@ void navigateMenu()
         printf("CPage: %2d Index: %2d", currentPage, currentIndex);
 #endif
         Locate(0, (currentIndex%FILES_PER_PAGE) + 2);
-        key = WaitKey();
+        //key = WaitKey();
+        key = InputChar();
         //debug
 #ifdef DEBUG
         Locate(0, 23);
@@ -204,6 +224,7 @@ void navigateMenu()
 #endif
         Locate(0, (currentIndex%FILES_PER_PAGE) + 2); // Position the cursor on the selected file
         printf(" "); // Clear the cursor
+        printf(game[currentIndex]);
         switch (key) 
         {
             case 30: // Up arrow
@@ -249,6 +270,7 @@ void navigateMenu()
         }
         Locate(0, (currentIndex%FILES_PER_PAGE) + 2); // Position the cursor on the selected file
         printf(">"); // Print the cursor
+        print_str_inverted(game[currentIndex]);
         Locate(0, (currentIndex%FILES_PER_PAGE) + 2); // Position the cursor on the selected file
     }
 }
