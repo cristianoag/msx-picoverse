@@ -65,8 +65,6 @@ This project is a community effort, and we would like to thank the following peo
 * Chandler Kluser
 * Ismael Arbufs
 * Josep Bonet Domènech
-* Mark S. Johnson
-* @piigaa-densetu-two-da
 * Wagner Tavares
 
 ## License 
