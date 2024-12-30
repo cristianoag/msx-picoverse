@@ -4,6 +4,11 @@ The MSX PicoVerse is an open-source initiative aimed at developing multi-functio
 
 This project aspires to enhance the MSX experience by enabling users to load ROMs, emulate hardware, or even create new hardware through a software-defined approach.
 
+## Images
+
+| PicoVerse MultiROM Menu | Prototype PCB (front) | Prototype PCB (back) |
+|---------|---------|---------|
+| ![Image 1](images/2024-12-29_21-16.png) | ![Image 2](images/20241230_001854885_iOS.jpg) | ![Image 3](images/20241230_001901504_iOS.jpg) |
 ## Hardware
 
 The available versions for the cartrdige are divided into two categories: 
