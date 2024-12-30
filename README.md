@@ -58,7 +58,16 @@ The RP2040 based carts are also compatible with the [MSX&#960;](https://github.c
 
 If you want to contribute to the software development, please check the [Software Playground](software/picoverse_2040/) folder for more information.
 
+## Thanks
 
+This project is a community effort, and we would like to thank the following people for their contributions:
+
+* Chandler Kluser
+* Ismael Arbufs
+* Josep Bonet Domènech
+* Mark S. Johnson
+* @piigaa-densetu-two-da
+* Wagner Tavares
 
 ## License 
 
