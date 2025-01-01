@@ -1,24 +1,30 @@
 # MSX PicoVerse - The MSX experience driven by the RaspBerry Pico
 
-The MSX PicoVerse is an open-source initiative aimed at developing multi-function cartridges for the MSX line of computers, utilizing variations of the Raspberry Pi Pico development boards or the RP2040/2350 integrated chips. 
+The MSX PicoVerse is an open-source initiative aimed at developing multi-function cartridges for the MSX line of computers, utilizing variations of the Raspberry Pi Pico development boards or the RP2040/RP2350 integrated chips. 
 
 This project aspires to enhance the MSX experience by enabling users to load ROMs, emulate hardware, or even create new hardware through a software-defined approach.
 
-## Images
+The project is still in its early stages, and we are looking for contributors to help us develop the hardware and software. If you are interested in contributing, please reach out.
 
-| Prototype PCB (front) | Prototype PCB (back) | Kicad 3D Render |
-|---------|---------|---------|
-| ![Image 1](images/20241230_001854885_iOS.jpg) | ![Image 2](images/20241230_001901504_iOS.jpg) | ![Image 2](images/2024-12-30_20-07.png) |
+> **Note:** There is no guarantee that the boards and or software will work as expected. This project is still a work in progress. If you decide to build the hardware, you do so at your own risk.
 
 ## Hardware
 
-The available versions for the cartrdige are divided into two categories: 
+| Prototype PCB (front) | Prototype PCB (back) |
+|---------|---------|
+| ![Image 1](images/20241230_001854885_iOS.jpg) | ![Image 2](images/20241230_001901504_iOS.jpg) | 
+
+The available versions for the cartridge are divided into two categories: 
 
 ### Cartridges based on the RP2040 chip (PicoVerse 2040)
 
+| PCB Front Side | PCB Back Side |
+|---------|---------|
+| ![Image 2](images/2024-12-30_20-07.png) | ![Image 2](images/2025-01-01_09-20.png) |
+
 The RP2040 is a dual-core ARM Cortex-M0+ microcontroller operating at up to 133 MHz, featuring 264 KB of SRAM and support for external flash memory. It offers a variety of interfaces, including GPIO pins, SPI, I²C, UART, ADCs, PWM channels, and USB support.
 
-PicoVerse 2040 cartridges are designed for development boards that expose 30 GPIO pins and are **NOT compatible** with standard Raspberry Pi Pico boards. The table below show the hardware available and the respective RP2040 boards:
+PicoVerse 2040 cartridges are designed for development boards that expose 30 GPIO pins and are **NOT compatible** with standard Raspberry Pi Pico boards. The table below shows the available designs and compatible boards:
 
 |Cartridge Design Files|Compatible Pico 2040 Boards|
 |-----------------------|------------------|
@@ -31,27 +37,21 @@ PicoVerse 2040 cartridges are designed for development boards that expose 30 GPI
 
 (2) The PicoVerse RP2040-PURPLE 5V is a modified version of the original design that connects the majority of the Pico GPIO pins directly to 5V. There is a debate about the safety of this approach, as it can damage the Pico board as it is not officially documented that the GPIO pins can be connected directly to 5V. This version only supports the AliExpress RP2040 PURPLE boards.
 
-### Cartridges based on the RP2350 chip (PicoVerse 2350)
+The board pictures shown above and the design that is being used for software development is the PicoVerse RP2040-PURPLE-5V.
 
-The RP2350, introduced in August 2024, is a high-performance microcontroller developed by Raspberry Pi Ltd. It features a unique dual-core, dual-architecture design, allowing selection between two Arm Cortex-M33 cores or two open-hardware Hazard3 RISC-V cores, operating at up to 150 MHz. 
+### Cartridges based on the RP2350B chip (PicoVerse 2350)
 
-Key specifications include:
+The RP2350, introduced in August 2024 by Raspberry Pi Ltd., is a high-performance microcontroller featuring a dual-core, dual-architecture design with selectable Arm Cortex-M33 or Hazard3 RISC-V cores, operating up to 150 MHz. It includes 520 KB of on-chip SRAM, supports up to 16 MB of external QSPI flash or PSRAM, and offers multiple communication interfaces (2× UART, 2× SPI, 2× I²C), 24 PWM channels, up to 8 ADC channels, 48 GPIO pins, USB 1.1 support, and 12 PIO state machines for flexible interfacing.
 
-* Memory: 520 KB of on-chip SRAM divided into ten independent banks.
-* External Memory Support: Up to 16 MB of external QSPI flash or PSRAM.
-* Communication Interfaces: 2× UART, 2× SPI controllers, 2× I²C controllers.
-* Analog and Digital I/O: 24 PWM channels, 4 or 8 ADC channels (depending on the package), and up to 48 GPIO pins.
-* USB Support: USB 1.1 controller with host and device capabilities.
-* Programmable I/O: 12 PIO state machines for flexible interfacing.
-
-PicoVerse 2350 cartridges are based on development boards that expose 48 GPIO pins and are **NOT compatible** with conventional Raspberry Pi Pico 2 development boards, 
-which typically expose only 26 GPIO pins. Currently, the following boards are supported:
+PicoVerse 2350 cartridges are based on development boards that expose 48 GPIO pins and are **NOT compatible** with conventional Raspberry Pi Pico 2 development boards, which typically expose only 26 GPIO pins. Currently, the following boards are supported:
 
 * [Pimoroni PGA2350](https://shop.pimoroni.com/products/pga2350?variant=42092629229651)
 * Olimex Pico2 XL - Not released yet!
 * Olimex Pico2 XXL - Not released yet!
 
 ## Software
+
+### PicoVerse 2040
 
 | PicoVerse 2040 MultiROM Menu | 
 |---------|
@@ -62,6 +62,10 @@ The software for the PicoVerse cartridges is being developed. The software will 
 The RP2040 based carts are also compatible with the [MSX&#960;](https://github.com/piigaa-densetu-two-dai/MSXpi) project created by @piigaa-densetu-two-dai, so you can use any of the software alternatives created for that board with this open source hardware.
 
 If you want to contribute to the software development, please check the [Software Playground](software/picoverse_2040/) folder for more information.
+
+### PicoVerse 2350
+
+The software for the PicoVerse 2350 cartridges is being developed. The software will be fully open-sourced.
 
 ## Thanks
 
