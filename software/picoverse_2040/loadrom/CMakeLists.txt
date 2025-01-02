@@ -72,10 +72,9 @@ target_include_directories(loadrom PRIVATE
 
 pico_add_extra_outputs(loadrom)
 
-# Custom command to delete the content of the dist folder and copy files
+# Custom command to copy files to dist folder
 add_custom_command(TARGET loadrom POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_SOURCE_DIR}/dist
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/dist
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:loadrom> ${CMAKE_SOURCE_DIR}/dist/loadrom.bin
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/uf2conv.exe ${CMAKE_SOURCE_DIR}/dist/uf2conv.exe
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/loadrom.bin ${CMAKE_SOURCE_DIR}/dist/loadrom.bin
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/uf2conv.exe ${CMAKE_SOURCE_DIR}/dist/uf2conv.exe
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/build.bat ${CMAKE_SOURCE_DIR}/dist/build.bat
 )

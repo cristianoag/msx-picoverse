@@ -15,24 +15,48 @@
 #include <stdio.h>
 #include <string.h>
 #include "pico/stdlib.h"
+#include "pico/multicore.h"
 #include "hardware/clocks.h"
 #include "multirom.h"
 
 // config area and buffer for the ROM data
-#define ROM_START = 0x1D00;
-static bool USE_SRAM_COPY = true;
+#define ROM_START = 0x8000; // ROM data starts at __flash_binary_end + 32768 (MENU)  = __flash_binary_end + 0x8000h
+static bool USE_SRAM_COPY = true; // Use SRAM copy of the ROM data
 
+// Struct to hold both address and data
+typedef struct {
+    uint16_t address;
+    uint8_t data;
+} bus_data_t;
+
+// Read both the address and data bus
+static inline bus_data_t read_address_and_data_bus(void) {
+    uint32_t gpio_values = gpio_get_all();
+    bus_data_t result;
+    result.address = gpio_values & 0x00FFFF;  // Lower 16 bits for address
+    result.data = (gpio_values >> 16) & 0xFF; // Upper 8 bits for data
+    return result;
+}
+
+/*
 // Read the address bus from the MSX
 static inline uint16_t read_address_bus(void) {
     // Return first 16 bits in the most efficient way
     return gpio_get_all() & 0x00FFFF;
-}
+}*/
 
 // Write a byte to the data bus
 static inline void write_data_bus(uint8_t data) 
 {
     // Write the given byte to the given address
     gpio_put_masked(0xFF0000, data << 16);
+}
+
+// Read a byte from the data bus
+static inline uint8_t read_data_bus(void) 
+{
+    // Read the data bus
+    return (gpio_get_all() >> 16) & 0xFF;
 }
 
 // Set the data bus to input mode
@@ -104,8 +128,6 @@ static inline void setup_gpio()
 // debug function
 void dump_rom_sram(uint32_t size)
 {
-    //Dump rom_sram in the hexdump format
-    printf("Dumping the first 32KB of the ROM\n");
     // Dump the ROM data in hexdump format
     for (int i = 0; i < size; i += 16) {
         // Print the address offset
@@ -150,9 +172,10 @@ int loadrom_32k(uint32_t offset, uint32_t size)
        gpio_put(PIN_WAIT, 1); // Lets go!
     }
 
+
     // Set data bus to input mode
     set_data_bus_input();
-    while (1) 
+    while (true) 
     {
         // Check control signals
         bool sltsl = (gpio_get(PIN_SLTSL) == 0); // Slot select (active low)
@@ -162,26 +185,78 @@ int loadrom_32k(uint32_t offset, uint32_t size)
         // MSX is requesting a memory read from this slot
         if (sltsl && rd && !wr) 
         {
-            //printf("Debug: sltsl=%d rd=%d wr=%d\n", sltsl, rd, wr);
-            uint16_t addr = read_address_bus();
+            bus_data_t bus_values = read_address_and_data_bus();
             // Check if the address is within the ROM range
-            if (addr >= 0x4000 && addr <= 0xBFFF) 
+            if (bus_values.address >= 0x4000 && bus_values.address <= 0xBFFF) 
             {
+                // Address is within the ROM range
+                uint16_t flash_offset = (bus_values.address - 0x4000) + offset;
+                uint8_t data = USE_SRAM_COPY ? rom_sram[(bus_values.address - 0x4000)] : rom[flash_offset];
+
                 // Drive data bus to output mode
                 set_data_bus_output();
-
-                // Address is within the ROM range
-                uint16_t flash_offset = (addr - 0x4000) + offset;
-                uint8_t data = USE_SRAM_COPY ? rom_sram[(addr - 0x4000)] : rom[flash_offset];
-
                 // Drive data onto the bus
                 write_data_bus(data);
-
                 // Wait until the read cycle completes (RD goes high)
                 while (gpio_get(PIN_RD) == 0) {
                     tight_loop_contents();
                    }
+                // Return data lines to input mode after cycle completes
+                set_data_bus_input();
 
+            }
+        } else {
+            // Not a read cycle - ensure data bus is not driven
+            set_data_bus_input();
+        }
+    }
+    return 0;
+}
+
+// Load a simple 48KB Linear0 ROM into the MSX
+// Those ROMs have three pages of 16Kb each in the following areas:
+// 0x0000-0x3FFF, 0x4000-0x7FFF and 0x8000-0xBFFF
+// AB is on 0x4000, 0x4001
+// The ROM data is stored in the flash memory starting at __flash_binary_end
+int loadrom_48k_Linear0(uint32_t offset, uint32_t size)
+{
+    // if SRAM copy is enabled, copy the ROM data to the SRAM buffer
+    if (USE_SRAM_COPY) {
+       gpio_init(PIN_WAIT); gpio_set_dir(PIN_WAIT, GPIO_OUT);
+       gpio_put(PIN_WAIT, 0); // Wait until we are ready to read the ROM
+       memcpy(rom_sram, rom + offset, size);
+       gpio_put(PIN_WAIT, 1); // Lets go!
+    }
+
+    // Set data bus to input mode
+    set_data_bus_input();
+    while (true) 
+    {
+        // Check control signals
+        bool sltsl = (gpio_get(PIN_SLTSL) == 0); // Slot select (active low)
+        bool rd = (gpio_get(PIN_RD) == 0);       // Read cycle (active low)
+        bool wr = (gpio_get(PIN_WR) == 0);       // Write cycle (active low, not used)
+        
+        // MSX is requesting a memory read from this slot
+        if (sltsl && rd && !wr) 
+        {
+            //uint16_t addr = read_address_bus();
+            bus_data_t bus_values = read_address_and_data_bus();
+            // Check if the address is within the ROM range
+            if (bus_values.address >= 0x0000 && bus_values.address <= 0xBFFF) 
+            {
+                // Address is within the ROM range
+                uint16_t flash_offset = bus_values.address + offset;
+                uint8_t data = USE_SRAM_COPY ? rom_sram[bus_values.address] : rom[flash_offset];
+
+                // Drive data bus to output mode
+                set_data_bus_output();
+                // Drive data onto the bus
+                write_data_bus(data);
+                // Wait until the read cycle completes (RD goes high)
+                while (gpio_get(PIN_RD) == 0) {
+                    tight_loop_contents();
+                   }
                 // Return data lines to input mode after cycle completes
                 set_data_bus_input();
             }
@@ -193,25 +268,53 @@ int loadrom_32k(uint32_t offset, uint32_t size)
     return 0;
 }
 
-// Load a 16KB ROM into the MSX
-int loadrom_16k(uint32_t offset, uint32_t size)
-{
-    //to be implemented
-}
-
-// Load a Linear0 ROM into the MSX
-int loadrom_Linear0(uint32_t offset, uint32_t size)
-{
-    //to be implemented
-}
-
 // Load a KonamiSCC ROM into the MSX
 int loadrom_KonamiSCC(uint32_t offset, uint32_t size)
 {
     //to be implemented
 }
 
-// Main function
+// Main function running on core 1
+void core1_entry() {
+    // Task for core 1
+    // We may need a mutex depending of what kind of racing condition we may have
+    // pending research
+    while (true) 
+    {
+        // intercepts IORQ operation on port 0x20
+        // if the value is 0x20, it means that the user selected a ROM to be loaded
+        // data bus will have the index of the ROM to be loaded
+        // the ROM will be loaded into the MSX and the MSX will be reseted to run the selected ROM
+
+        // Check control signals
+        bool iorq = (gpio_get(PIN_IORQ) == 0); // IORQ signal (active low)
+        if (iorq) {
+            //uint16_t addr = read_address_bus();
+            set_data_bus_input();
+            bus_data_t bus_values = read_address_and_data_bus();
+
+            // Check if the address is 0x20
+            if ((bus_values.address & 0xFF) == 0x20) 
+            {
+                // Set data bus to input mode to read data from MSX
+                //set_data_bus_input();
+                uint8_t rom_index = bus_values.data+1; // this is because the MSX menu which is the index 0 is never shown on the interface
+                // Read the data bus to get the ROM index
+                printf("Debug: Data bus value for addr 0x20 is %d\n", rom_index);
+
+                // Implement the logic to load the selected ROM based on rom_index
+                // ...
+
+                // Reset the MSX to run the selected ROM
+                // ...
+            }
+        }
+
+    }
+}
+
+
+// Main function running on core 0
 int main()
 {
     printf("Debug: Starting the MSX PICOVERSE 2040 multirom firmware\n");
@@ -222,11 +325,15 @@ int main()
     // Initialize GPIO
     setup_gpio();
 
+    // Start core 1
+    multicore_launch_core1(core1_entry);
+
     printf("Debug: Loading the MSX Menu ROM\n");
     // The configuration area has (256 * (20 + 1 + 4 + 4)) = 7424 bytes (0x1d00h)
     // So the ROM data starts at __flash_binary_end & 0x1d0
-    int ret = loadrom_32k(0x1d00, 32768); //load the first 32KB ROM into the MSX
-    printf("Debug: MSX Menu ROM loaded\n");
+    // the ROM reading is a blocking operation, so while the game is running, load_rom will be mapping addresses to the MSX
+    // whithin the memory range for the ROM. core 1 runs a routine to control when the loadrom needs to leave the loop
+    int ret = loadrom_32k(0x0000, 32768); //load the first 32KB ROM into the MSX
 
     if (ret != 0) {
         printf("Debug: Error loading ROM!\n");

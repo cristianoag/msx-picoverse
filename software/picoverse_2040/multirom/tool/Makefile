@@ -11,6 +11,7 @@ SOURCES = multirom.c
 OUTFILE = multirom.exe
 
 MSXMENU = ../msx/dist/menu.rom
+PICOBIN = ../pico/multirom/build/multirom.bin
 
 all: clean compile package
 
@@ -23,11 +24,13 @@ $(BINDIR)/$(OUTFILE): $(SRCDIR)/$(SOURCES)
 package:
 	@echo "Packaging..."
 	cp $(BINDIR)/$(OUTFILE) $(DISDIR)/$(OUTFILE)
-	cp $(MSXMENU) $(BINDIR)/menu.msx
-	cp $(MSXMENU) $(DISDIR)/menu.msx
+	cp $(PICOBIN) $(DISDIR)/multirom.bin
+	cp $(MSXMENU) $(DISDIR)/multirom.msx
+	cp ../../tools/uf2conv.exe $(DISDIR)/uf2conv.exe
+	cp $(SRCDIR)/build.bat $(DISDIR)/build.bat
 
 clean:
 		@echo "Cleaning ...."
-		rm -f $(BINDIR)/*.exe $(BINDIR)/*.msx $(BINDIR)/config.bin $(BINDIR)/romcmb.bin
+		rm -f $(BINDIR)/*.exe $(BINDIR)/*.msx $(BINDIR)/multirom.cfg $(BINDIR)/multirom_final.bin
 		rm -f $(DISDIR)/*.exe $(DISDIR)/*.msx
 

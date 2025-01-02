@@ -21,6 +21,9 @@
 // Define maximum files per page and screen properties
 #define FILES_PER_PAGE 19 // Maximum files per page
 #define MAX_FILES 256 // Maximum files supported
+#define ROM_RECORD_SIZE 29 // Size of the ROM record in bytes
+#define MAX_ROM_RECORDS 256 // Maximum number of ROM records
+#define MEMORY_START 0x8000 // Start of the memory area to read the ROM records
 
 // Define the variables for the files
 // game - Game name - 20 bytes max
@@ -32,6 +35,59 @@ char *game[MAX_FILES];
 int mapp[MAX_FILES];
 unsigned long offset[MAX_FILES];
 unsigned long size[MAX_FILES];
+
+typedef struct {
+    char Name[20];
+    unsigned char Mapper;
+    unsigned long Size;
+    unsigned long Offset;
+} ROMRecord;
+
+// Function to read a 4-byte value from memory (little-endian)
+unsigned long read_ulong(const unsigned char *ptr) {
+    return (unsigned long)ptr[0] |
+           ((unsigned long)ptr[1] << 8) |
+           ((unsigned long)ptr[2] << 16) |
+           ((unsigned long)ptr[3] << 24);
+}
+
+int isEndOfData(const unsigned char *memory) {
+    for (int i = 0; i < ROM_RECORD_SIZE; i++) {
+        if (memory[i] != 0xFF) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+void readROMData(ROMRecord *records, unsigned char *recordCount) {
+    unsigned char *memory = (unsigned char *)MEMORY_START;
+    unsigned char count = 0;
+
+    while (count < MAX_ROM_RECORDS && !isEndOfData(memory)) {
+        // Copy Name
+        MemCopy(records[count].Name, memory, 20);
+        records[count].Name[19] = '\0'; // Ensure null termination
+        
+        // Read Mapper code
+        records[count].Mapper = memory[20];
+
+        // Read Size (4 bytes)
+        records[count].Size = read_ulong(&memory[21]);
+
+        // Read Offset (4 bytes)
+        records[count].Offset = read_ulong(&memory[25]);
+
+        // Move to the next record
+        memory += ROM_RECORD_SIZE;
+        count++;
+    }
+
+    *recordCount = count;
+}
+
+
+
 
 // Function prototypes
 int putchar (int character);
@@ -172,6 +228,40 @@ void charMap() {
     
 }
 
+void configMenu()
+{
+    Cls(); // Clear the screen
+    printf("MSX PICOVERSE 2040     [MultiROM v1.0]");
+    Locate(0, 1);
+    printf("---------------------------------------");
+    Locate(0, 8);
+
+
+    ROMRecord records[MAX_ROM_RECORDS];
+    unsigned char recordCount = 0;
+
+    readROMData(records, &recordCount);
+    Locate(0, 9);
+    printf("Total Records Found: %d\n\n", recordCount);
+    //printROMRecords(records, recordCount);
+    for (unsigned char i = 0; i < recordCount; i++) 
+    {
+        Locate(0,10+i);
+        printf("%d ", i + 1);
+        printf(" %-20s ", records[i].Name);
+        printf(" %d ", records[i].Mapper);
+        printf(" %lu ", records[i].Size);
+        printf(" 0x%08lX\n", records[i].Offset);
+    }
+
+    Locate(0, 21);
+    printf("--------------------------------------");
+    Locate(0, 22);
+    printf("Press any key to return to the menu...");
+    InputChar();
+    displayMenu();
+    navigateMenu();
+}
 void helpMenu()
 {
     
@@ -203,6 +293,10 @@ void helpMenu()
     navigateMenu();
 }
 
+void loadGame(int index) 
+{
+    OutPort(0x20, index); // Disable the ROM
+}
 
 void navigateMenu() 
 {
@@ -210,18 +304,18 @@ void navigateMenu()
 
     while (1) 
     {
-#ifdef DEBUG
+
+        //debug
         Locate(18, 23);
         printf("CPage: %2d Index: %2d", currentPage, currentIndex);
-#endif
+
         Locate(0, (currentIndex%FILES_PER_PAGE) + 2);
         //key = WaitKey();
         key = InputChar();
         //debug
-#ifdef DEBUG
         Locate(0, 23);
         printf("Key: %3d", key);
-#endif
+
         Locate(0, (currentIndex%FILES_PER_PAGE) + 2); // Position the cursor on the selected file
         printf(" "); // Clear the cursor
         printf(game[currentIndex]);
@@ -266,6 +360,15 @@ void navigateMenu()
             case 104: // h - Help (lowercase h)
                 // Help
                 helpMenu(); // Display the help menu
+                break;
+            case 99: // C - Config (uppercase C)
+            case 67: // c - Config (lowercase c)
+                // Config
+                configMenu(); // Display the config menu
+                break;
+            case 13: // Enter
+                // Load the game
+                loadGame(currentIndex); // Load the selected game
                 break;
         }
         Locate(0, (currentIndex%FILES_PER_PAGE) + 2); // Position the cursor on the selected file

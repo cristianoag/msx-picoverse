@@ -25,13 +25,13 @@ copy /b testflash1.bin+romfile.rom testflash1-rom.bin
 uf2conv.exe testflash1-rom.bin testflash1-rom.uf2
 ```
 
-### [loadrom](loadrom/)
+### [loadrom](loadrom/dist/)
 
-This is a program to load a single ROM image from the flash memory of the PICO board. The ROM image is read from the flash memory and copied to the RAM of the PICO board. The ROM image is then executed. At this moment the tool can load and execute the following ROMs:
+This is a program to load a single non-megaROM ROM image from the flash memory of the PICO board. The ROM image is read from the flash memory and copied to the RAM of the PICO board. The ROM image is then executed. At this moment the tool can load and execute following ROM types:
 
-* Plain 16KB 
-* Plain 32KB 
-* Linear0 48KB 
+* Plain 16KB ROMs
+* Plain 32KB ROMs
+* Linear0 48KB ROMs
 
 To use it you need to concatenate the ROM to the resultant bin file for the loadrom. Use the following commands to prepare the UF2 file:
 
@@ -39,9 +39,23 @@ To use it you need to concatenate the ROM to the resultant bin file for the load
 copy /b loadrom.bin+romfile.rom loadrom.bin
 uf2conv.exe loadrom.bin loadrom.uf2
 ```
+
+I have provided a BAT file that can be used to concatenate the ROM to the resultant bin file, and generate the UF2 file to program the PICO. The BAT file is named `build.bat` and you can use it as follows:
+
+```
+build.bat romfile.rom
+```
+It will also copy the UF2 file to the PICO drive if it is connected to the PC.
+
 ### [multirom](multirom/)
 
-This is a program that allows the user to select a ROM image from a list of ROMs stored in the flash memory of the PICO board. The ROM image is read from the flash memory and copied to the RAM of the PICO board. The ROM image is then executed. 
+This is an alternative that allows the user to select a ROM image from a list of ROMs stored in the flash memory of the PICO board. The ROM image is read from the flash memory and copied to the RAM of the PICO board. The ROM image is then executed on the MSX. 
+
+At this moment the tool can load and execute following ROM types:
+
+* Plain 16KB ROMs
+* Plain 32KB ROMs
+* Linear0 48KB ROMs
 
 ```
 In development
