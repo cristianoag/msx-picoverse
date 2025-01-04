@@ -14,36 +14,14 @@
 // This work is licensed  under a "Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
 // License". https://creativecommons.org/licenses/by-nc-sa/4.0/
 
-#include <msx_fusion.h>
-#include <stdio.h>
-#include "bios.h"
+#include "menu.h"
 
-// Define maximum files per page and screen properties
-#define FILES_PER_PAGE 19 // Maximum files per page
-#define MAX_FILES 256 // Maximum files supported
-#define ROM_RECORD_SIZE 29 // Size of the ROM record in bytes
-#define MAX_ROM_RECORDS 256 // Maximum number of ROM records
-#define MEMORY_START 0x8000 // Start of the memory area to read the ROM records
-
-// Define the variables for the files
-// game - Game name - 20 bytes max
-// mapp - Mapper code - 1 byte max
-// size - Size of the game in bits - 4 bytes max
-// offset - Offset of the game in the flash - 4 bytes max
-// These variables will be populated dynamically from the flash configuration area
-char *game[MAX_FILES];
-int mapp[MAX_FILES];
-unsigned long offset[MAX_FILES];
-unsigned long size[MAX_FILES];
-
-typedef struct {
-    char Name[20];
-    unsigned char Mapper;
-    unsigned long Size;
-    unsigned long Offset;
-} ROMRecord;
-
-// Function to read a 4-byte value from memory (little-endian)
+// read_ulong - Read a 4-byte value from the memory area
+// This function will read a 4-byte value from the memory area pointed by ptr and return the value as an unsigned long
+// Parameters:
+//   ptr - Pointer to the memory area to read the value from
+// Returns:
+//   The 4-byte value as an unsigned long 
 unsigned long read_ulong(const unsigned char *ptr) {
     return (unsigned long)ptr[0] |
            ((unsigned long)ptr[1] << 8) |
@@ -51,6 +29,12 @@ unsigned long read_ulong(const unsigned char *ptr) {
            ((unsigned long)ptr[3] << 24);
 }
 
+// isEndOfData - Check if the memory area is the end of the data
+// This function will check if the memory area pointed by memory is the end of the data. The end of the data is defined by all bytes being 0xFF.
+// Parameters:
+//   memory - Pointer to the memory area to check
+// Returns:
+//   1 if the memory area is the end of the data, 0 otherwise
 int isEndOfData(const unsigned char *memory) {
     for (int i = 0; i < ROM_RECORD_SIZE; i++) {
         if (memory[i] != 0xFF) {
@@ -60,49 +44,38 @@ int isEndOfData(const unsigned char *memory) {
     return 1;
 }
 
+// readROMData - Read the ROM records from the memory area
+// This function will read the ROM records from the memory area pointed by memory and store them in the records array. The function will stop reading
+// when it reaches the end of the data or the maximum number of records is reached.
+// Parameters:
+//   records - Pointer to the array of ROM records to store the data
+//   recordCount - Pointer to the variable to store the number of records read
 void readROMData(ROMRecord *records, unsigned char *recordCount) {
     unsigned char *memory = (unsigned char *)MEMORY_START;
-    unsigned char count = 0;
+    unsigned char count;
 
+    count = 0;
     while (count < MAX_ROM_RECORDS && !isEndOfData(memory)) {
         // Copy Name
         MemCopy(records[count].Name, memory, 20);
         records[count].Name[19] = '\0'; // Ensure null termination
-        
-        // Read Mapper code
-        records[count].Mapper = memory[20];
-
-        // Read Size (4 bytes)
-        records[count].Size = read_ulong(&memory[21]);
-
-        // Read Offset (4 bytes)
-        records[count].Offset = read_ulong(&memory[25]);
-
-        // Move to the next record
-        memory += ROM_RECORD_SIZE;
+        records[count].Mapper = memory[20]; // Read Mapper code
+        records[count].Size = read_ulong(&memory[21]); // Read Size (4 bytes)
+        records[count].Offset = read_ulong(&memory[25]); // Read Offset (4 bytes)
+        memory += ROM_RECORD_SIZE; // Move to the next record
         count++;
     }
 
     *recordCount = count;
 }
 
-
-
-
-// Function prototypes
-int putchar (int character);
-char* mapper_description(int number);
-void navigateMenu();
-void displayMenu();
-void helpMenu();
-
-// Current page and file index
-int currentPage; // Current page
-int totalPages; // Total pages
-int currentIndex; // Current file index
-int totalFiles; // Total files
-
-// Function to override the putchar function
+// putchar - Print a character on the screen
+// This function will override the putchar function to use the MSX BIOS routine to print characters on the screen
+// This is to deal with the mess we have between the Fusion-C putchar and the SDCC Z80 library putchar
+// Parameters:
+//  character - The character to print
+// Returns:
+//  The character printed
 int putchar (int character)
 {
     __asm
@@ -120,8 +93,12 @@ int putchar (int character)
     return character;
 }
 
-// Function to invert the characters in the character table
-// This function will invert the characters from startChar to endChar in the character table
+// invert_chars - Invert the characters in the character table
+// This function will invert the characters from startChar to endChar in the character table. We use it to copy and invert the characters from the
+// normal character table area to the inverted character table area. This is to display the game names in the inverted character table.
+// Parameters:
+//   startChar - The first character to invert
+//   endChar - The last character to invert
 void invert_chars(unsigned char startChar, unsigned char endChar)
 {
     unsigned int srcAddress, dstAddress;
@@ -145,6 +122,11 @@ void invert_chars(unsigned char startChar, unsigned char endChar)
     }
 }
 
+// print_str_normal - Print a string using the normal character table
+// This function will print a string using the normal character table. It will apply an offset to the characters to display them correctly.
+// Used to display the game names in the normal characters.
+// Parameters:
+//   str - The string to print
 void print_str_normal(const char *str) 
 {
     while (*str) { // Loop through each character in the string
@@ -154,6 +136,11 @@ void print_str_normal(const char *str)
     }
 }
 
+// print_str_inverted - Print a string using the inverted character table
+// This function will print a string using the inverted character table. It will apply an offset to the characters to display them correctly.
+// Used to display the game names in the inverted characters.
+// Parameters:
+//   str - The string to print
 void print_str_inverted(const char *str) 
 {
     while (*str) {// Loop through each character in the string
@@ -163,31 +150,35 @@ void print_str_inverted(const char *str)
     }
 }
 
-// Function to return the description of the mapper
-// 1: 16KB, 2: 32KB, 3: Konami, 4: Linear0
+// mapper_description - Get the description of the mapper to be printed
+// This function will return the description of the mapper based on the mapper code. The description will be used to display the mapper type on the menu.
+// Parameters:
+//   number - The mapper code
+// Returns:
+//  The description of the mapper
+//  1: 16KB, 2: 32KB, 3: Konami, 4: Linear0
 char* mapper_description(int number) {
     // Array of strings for the descriptions
     const char *descriptions[] = {"16KB", "32KB", "KONAMI", "LINEAR0"};
     return descriptions[number - 1];
 }
 
-// Function to display the menu
+// displayMenu - Display the menu on the screen
+// This function will display the menu on the screen. It will print the header, the files on the current page and the footer with the page number and options.
 void displayMenu() {
     
-    Screen(0); // Set the screen mode
-    invert_chars(32, 126);
     Cls(); // Clear the screen
 
     // header
     printf("MSX PICOVERSE 2040     [MultiROM v1.0]");
     Locate(0, 1);
     printf("--------------------------------------");
-    int xi = currentIndex%(FILES_PER_PAGE-1); // Calculate the index of the file to start displaying
+    unsigned char xi = currentIndex%(FILES_PER_PAGE-1); // Calculate the index of the file to start displaying
     for (int i = 0; (i < FILES_PER_PAGE) && (xi<totalFiles-1) ; i++)  // Loop through the files
     {
         Locate(1, 2 + i); // Position on the screen, starting at line 2
         xi = i+((currentPage-1)*FILES_PER_PAGE); // Calculate the index of the file to display
-        printf("%-22s %4luKB %-8s",game[xi], size[xi]/1024, mapper_description(mapp[xi]));  // Print each file name, size and mapper
+        printf("%-22s %4luKB %-8s",records[xi].Name, records[xi].Size/1024, mapper_description(records[xi].Mapper));  // Print each file name, size and mapper
     }
     // footer
     Locate(0, 21);
@@ -196,11 +187,14 @@ void displayMenu() {
     printf("Page %02d/%02d     [H - Help] [C - Config]",currentPage, totalPages); // Print the page number and the help and config options
     Locate(0, (currentIndex%FILES_PER_PAGE) + 2); // Position the cursor on the selected file
     printf(">"); // Print the cursor
-    print_str_inverted(game[currentIndex%FILES_PER_PAGE]);
+    print_str_inverted(records[currentIndex%FILES_PER_PAGE].Name); // Print the selected file name inverted
 }
 
-   
-// Debug - Display the MSX character table
+// *** DEBUG FUNCTION - REMOVE LATER ***
+// charMap - Display the character map on the screen
+// This function will display the character map on the screen. It will print all the characters from the MSX character table.
+// Used only for debug, we can remove it later
+// *** DEBUG FUNCTION - REMOVE LATER ***
 void charMap() {
     int row;
     int col;
@@ -228,31 +222,17 @@ void charMap() {
     
 }
 
+// configMenu - Display the configuration menu on the screen
+// This function will display the configuration menu on the screen. 
 void configMenu()
 {
     Cls(); // Clear the screen
     printf("MSX PICOVERSE 2040     [MultiROM v1.0]");
     Locate(0, 1);
     printf("---------------------------------------");
-    Locate(0, 8);
+    Locate(0, 2);
 
-
-    ROMRecord records[MAX_ROM_RECORDS];
-    unsigned char recordCount = 0;
-
-    readROMData(records, &recordCount);
-    Locate(0, 9);
-    printf("Total Records Found: %d\n\n", recordCount);
-    //printROMRecords(records, recordCount);
-    for (unsigned char i = 0; i < recordCount; i++) 
-    {
-        Locate(0,10+i);
-        printf("%d ", i + 1);
-        printf(" %-20s ", records[i].Name);
-        printf(" %d ", records[i].Mapper);
-        printf(" %lu ", records[i].Size);
-        printf(" 0x%08lX\n", records[i].Offset);
-    }
+    //To be implemented
 
     Locate(0, 21);
     printf("--------------------------------------");
@@ -262,6 +242,9 @@ void configMenu()
     displayMenu();
     navigateMenu();
 }
+
+// helpMenu - Display the help menu on the screen
+// This function will display the help menu on the screen. It will print the help information and the keys to navigate the menu.
 void helpMenu()
 {
     
@@ -293,11 +276,17 @@ void helpMenu()
     navigateMenu();
 }
 
+// loadGame - Load the game from the flash memory
+// This function will load the game from the flash memory based on the index. 
 void loadGame(int index) 
 {
     OutPort(0x20, index); // Disable the ROM
 }
 
+// navigateMenu - Navigate the menu
+// This function will navigate the menu. It will wait for the user to press a key and then act based on the key pressed. The user can navigate the menu using the arrow keys
+// to move up and down the files, left and right to move between pages, enter to load the game, H to display the help screen and C to display the config screen.
+// The function will update the current page and current index based on the key pressed and display the menu again.
 void navigateMenu() 
 {
     char key;
@@ -318,7 +307,7 @@ void navigateMenu()
 
         Locate(0, (currentIndex%FILES_PER_PAGE) + 2); // Position the cursor on the selected file
         printf(" "); // Clear the cursor
-        printf(game[currentIndex]);
+        printf(records[currentIndex].Name); // Print the file name
         switch (key) 
         {
             case 30: // Up arrow
@@ -373,51 +362,21 @@ void navigateMenu()
         }
         Locate(0, (currentIndex%FILES_PER_PAGE) + 2); // Position the cursor on the selected file
         printf(">"); // Print the cursor
-        print_str_inverted(game[currentIndex]);
+        print_str_inverted(records[currentIndex].Name); // Print the selected file name
         Locate(0, (currentIndex%FILES_PER_PAGE) + 2); // Position the cursor on the selected file
     }
 }
-
-
 
 void main() {
     // Initialize the variables
     currentPage = 1; // Start on page 1
     currentIndex = 0; // Start at the first file - index 0
-
-    totalFiles = 22; // Total of files stored on the flash
-    totalPages = (int)((totalFiles/FILES_PER_PAGE)+1); // Calculate the total pages based on the total files and files per page
     
-    // sample games - need to loop through the flash configuration area and populate the arrays
-    // game - Game name - 20 bytes max
-    // mapp - Mapper code - 1 byte max
-    // size - Size of the game in bits - 4 bytes max
-    // offset - Offset of the game in the flash - 4 bytes max
+    readROMData(records, &totalFiles);
+    totalPages = (int)((totalFiles/FILES_PER_PAGE)+1); // Calculate the total pages based on the total files and files per page
 
-    // mappers - 1: 16KB, 2: 32KB, 3: Konami, 4: Linear0
-
-    game[0] =  "Metal Gear          ";    mapp[0] = 3; size[0] = 131072;
-    game[1] =  "Nemesis             ";    mapp[1] = 3; size[1] = 131072;
-    game[2] =  "Contra              ";    mapp[2] = 3; size[2] = 131072;
-    game[3] =  "Castlevania         ";    mapp[3] = 3; size[3] = 131072;
-    game[4] =  "Kings Valley II     ";    mapp[4] = 3; size[4] = 131072;
-    game[5] =  "Vampire Killer      ";    mapp[5] = 3; size[5] = 131072;
-    game[6] =  "Snatcher            ";    mapp[6] = 3; size[6] = 131072;
-    game[7] =  "Galaga              ";    mapp[7] = 2; size[7] = 32768;
-    game[8] =  "Zaxxon              ";    mapp[8] = 2; size[8] = 32768;
-    game[9] =  "Salamander          ";    mapp[9] = 3; size[9] = 131072;
-    game[10] = "Parodius            ";    mapp[10] = 3; size[10] = 131072;
-    game[11] = "Knightmare          ";    mapp[11] = 2; size[11] = 32768;
-    game[12] = "Pippols             ";    mapp[12] = 1; size[12] = 16384;
-    game[13] = "The Maze of Galious ";    mapp[13] = 3; size[13] = 131072;
-    game[14] = "Penguin Adventure   ";    mapp[14] = 2; size[14] = 32768;
-    game[15] = "Space Manbow        ";    mapp[15] = 3; size[15] = 131072;
-    game[16] = "Gradius 2           ";    mapp[16] = 3; size[16] = 131072;
-    game[17] = "TwinBee             ";    mapp[17] = 1; size[17] = 16384;
-    game[18] = "Zanac               ";    mapp[18] = 2; size[18] = 32768;
-    game[19] = "H.E.R.O.            ";    mapp[19] = 1; size[19] = 16384;
-    game[20] = "Yie Ar Kung-Fu      ";    mapp[20] = 2; size[20] = 32768;
-    game[21] = "XRacing             ";    mapp[21] = 4; size[21] = 49152;
+    Screen(0); // Set the screen mode
+    invert_chars(32, 126);
 
     // Display the menu
     displayMenu();

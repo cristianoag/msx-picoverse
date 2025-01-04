@@ -24,13 +24,15 @@ $(BINDIR)/$(OUTFILE): $(SRCDIR)/$(SOURCES)
 package:
 	@echo "Packaging..."
 	cp $(BINDIR)/$(OUTFILE) $(DISDIR)/$(OUTFILE)
-	cp $(PICOBIN) $(DISDIR)/multirom.bin
+	cp $(PICOBIN) $(BINDIR)/multirom.bin 
+	cp $(MSXMENU) $(BINDIR)/multirom.msx
+	cp $(PICOBIN) $(DISDIR)/multirom.bin 
 	cp $(MSXMENU) $(DISDIR)/multirom.msx
-	cp ../../tools/uf2conv.exe $(DISDIR)/uf2conv.exe
-	cp $(SRCDIR)/build.bat $(DISDIR)/build.bat
+
+#	cp ../../tools/uf2conv.exe $(DISDIR)/uf2conv.exe
 
 clean:
 		@echo "Cleaning ...."
-		rm -f $(BINDIR)/*.exe $(BINDIR)/*.msx $(BINDIR)/multirom.cfg $(BINDIR)/multirom_final.bin
-		rm -f $(DISDIR)/*.exe $(DISDIR)/*.msx
+		rm -f $(BINDIR)/*.exe $(BINDIR)/multirom.msx $(BINDIR)/multirom.cfg $(BINDIR)/multirom.bin $(BINDIR)/multirom.cmb $(BINDIR)/multirom.uf2
+		rm -f $(DISDIR)/*.exe $(DISDIR)/multirom.msx $(DISDIR)/multirom.cfg $(DISDIR)/multirom.bin $(DISDIR)/multirom.cmb $(DISDIR)/multirom.uf2
 
