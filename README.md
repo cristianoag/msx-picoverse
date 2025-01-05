@@ -67,14 +67,6 @@ If you want to contribute to the software development, please check the [Softwar
 
 The software for the PicoVerse 2350 cartridges is being developed. The software will be fully open-sourced.
 
-## Thanks
-
-This project is a community effort, and we would like to thank the following people for their contributions:
-
-* Ismael Arbufs
-* Josep Bonet Domènech
-* Wagner Tavares
-
 ## License 
 
 ![Open Hardware](images/ccans.png)
