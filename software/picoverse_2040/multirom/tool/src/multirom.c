@@ -151,8 +151,8 @@ void create_uf2_file(const char *combined_filename, const char *uf2_filename) {
     }
     fclose(uf2_file);
     fclose(combined_file);
-    printf("Wrote %d blocks to %s\n", numbl, uf2_filename);
-    printf("UF2 file created successfully.\n");
+    printf("\nSuccessfully wrote %d blocks to %s.\n", numbl, uf2_filename);
+    //printf("%s file created successfully.\n", UF2FILENAME);
 
 }
 
@@ -307,12 +307,12 @@ int main()
     // Pad the remaining space to reach 32KB
     write_padding(final_output_file, total_bytes_written, TARGET_FILE_SIZE, 0xFF);
 
-    printf("About to append the ROM files to the final output file...\n");
-    printf("File count = %d\n", file_count);
+    //printf("About to append the ROM files to the final output file...\n");
+    //printf("File count = %d\n", file_count);
     // Append the content of each ROM file to the final output file in the same order
     for (int i = 0; i < file_count; i++) {
         input_file = fopen(files[i].file_name, "rb");
-        printf("Appending ROM file %s to the final output file...\n", files[i].file_name);
+        //printf("Appending ROM file %s to the final output file...\n", files[i].file_name);
         if (!input_file) {
             perror("Failed to open ROM file");
             continue;
@@ -326,7 +326,7 @@ int main()
     }
 
     fclose(final_output_file);
-    printf("\nCombined ROM binary file '%s' created successfully.\n", COMBINED_FILE);
+    //printf("\nCombined ROM binary file '%s' created successfully.\n", COMBINED_FILE);
     create_uf2_file(COMBINED_FILE, UF2FILENAME);
     return 0;
 }
