@@ -71,7 +71,6 @@ The software for the PicoVerse 2350 cartridges is being developed. The software 
 
 This project is a community effort, and we would like to thank the following people for their contributions:
 
-* Chandler Kluser
 * Ismael Arbufs
 * Josep Bonet Domènech
 * Wagner Tavares
