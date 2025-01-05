@@ -21,7 +21,6 @@
 // config area and buffer for the ROM data
 #define ROM_START    0x8000;    // ROM data starts at __flash_binary_end + 32768 (MENU)  = __flash_binary_end + 0x8000h
 #define MAX_MEM_SIZE (64*1024)  // Maximum memory size
-#define MAX_ROM_SIZE (48*1024)  // Maximum ROM Size
 #define MONITOR_ADDR 0x9D01     // Monitor ROM address - Configuration binary 0x8000+(ROM_RECORD_SIZE*MAX_ROM_RECORDS)+1 = 0x8000 +0x1D00 + 0x1 = 0x9D01
 #define ROM_RECORD_SIZE 29      // Size of the ROM record in the configuration area in bytes
 #define MAX_ROM_RECORDS 256     // Maximum ROM files supported 2^8=256
@@ -443,6 +442,8 @@ void loadrom_48k_Linear0(uint32_t offset, uint32_t size)
 int loadrom_KonamiSCC(uint32_t offset, uint32_t size)
 {
     //to be implemented
+
+    
 }
 
 // Main function running on core 1
@@ -471,9 +472,9 @@ int main()
     printf("Debug: Mapper: %d\n", records[rom_index].Mapper);
     printf("Debug: Size: %d\n", records[rom_index].Size);
     printf("Debug: Offset: %d\n", records[rom_index].Offset);
-    if ((records[rom_index].Size == 32768) || (records[rom_index].Size == 16384))
+    if ((records[rom_index].Mapper == 1) || (records[rom_index].Mapper == 2))
         loadrom_32k(records[rom_index].Offset, records[rom_index].Size); //load the selected ROM into the MSX
-    else if (records[rom_index].Size == 49152)
+    else if (records[rom_index].Mapper == 4)
         loadrom_48k_Linear0(records[rom_index].Offset, records[rom_index].Size); //load the selected ROM into the MSX
     printf("Debug: MSX Menu ROM loaded\n");
 

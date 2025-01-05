@@ -32,8 +32,11 @@ This is a program to load a single non-megaROM ROM image from the flash memory o
 * Plain 16KB ROMs
 * Plain 32KB ROMs
 * Linear0 48KB ROMs
+* Konami SCC 128KB ROMs
 
 To use it you need to concatenate the ROM to the resultant bin file for the loadrom. Use the following commands to prepare the UF2 file:
+
+ATTENTION: I've been using loadrom for implementing new mappers and at this moment it is only loading 128KB KSCC ROMs. I will be re-adding the other mappers soon.
 
 ```
 copy /b loadrom.bin+romfile.rom loadrom.bin
@@ -56,9 +59,12 @@ At this moment the tool can load and execute following ROM types:
 * Plain 16KB ROMs
 * Plain 32KB ROMs
 * Linear0 48KB ROMs
+* Konami SCC 128KB ROMs
+
+To use it you need to run the multirom.exe tool in the same folder as the ROM files. Please rename the ROM files with names with up to 20 characters in the way you want them to appear in the menu. The tool will read the ROM files, detect their type and create a UF2 file that can be used to program the PICO board. 
 
 ```
-In development
+multirom.exe
 ```
 
 ### [flashrom](flashrom/)
