@@ -5,7 +5,7 @@
 // multirom.c - This is the Raspberry Pico firmware that will be used to load ROMs into the MSX
 //
 // This firmware is responsible for loading the multirom menu and the ROMs selected by the user into the MSX. When flashed through the 
-// multirom tool, it will be stored on the pico flash memory followed by the configuration area and all the ROMs processed by the 
+// multirom tool, it will be stored on the pico flash memory followed by the MSX MENU ROM (with the config) and all the ROMs processed by the 
 // multirom tool. The sofware in this firmware will load the first 32KB ROM that contains the menu into the MSX and it will allow the user
 // to select a ROM to be loaded into the MSX. The selected ROM will be loaded into the MSX and the MSX will be reseted to run the selected ROM.
 //
@@ -17,17 +17,91 @@
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
 #include "hardware/clocks.h"
-#include "multirom.h"
 
 // config area and buffer for the ROM data
-#define ROM_START = 0x8000; // ROM data starts at __flash_binary_end + 32768 (MENU)  = __flash_binary_end + 0x8000h
+#define ROM_START    0x8000;    // ROM data starts at __flash_binary_end + 32768 (MENU)  = __flash_binary_end + 0x8000h
+#define MAX_MEM_SIZE (64*1024)  // Maximum memory size
+#define MAX_ROM_SIZE (48*1024)  // Maximum ROM Size
+#define MONITOR_ADDR 0x9D01     // Monitor ROM address - Configuration binary 0x8000+(ROM_RECORD_SIZE*MAX_ROM_RECORDS)+1 = 0x8000 +0x1D00 + 0x1 = 0x9D01
+#define ROM_RECORD_SIZE 29      // Size of the ROM record in the configuration area in bytes
+#define MAX_ROM_RECORDS 256     // Maximum ROM files supported 2^8=256
+#define ROM_NAME_MAX 20         // Maximum size of the ROM name
+
+
+// -----------------------
+// User-defined pin assignments
+// -----------------------
+// Address lines (A0-A15) as inputs from MSX
+#define PIN_A0     0 
+#define PIN_A1     1
+#define PIN_A2     2
+#define PIN_A3     3
+#define PIN_A4     4
+#define PIN_A5     5
+#define PIN_A6     6
+#define PIN_A7     7
+#define PIN_A8     8
+#define PIN_A9     9
+#define PIN_A10    10
+#define PIN_A11    11
+#define PIN_A12    12
+#define PIN_A13    13
+#define PIN_A14    14
+#define PIN_A15    15
+
+// Data lines (D0-D7)
+#define PIN_D0     16
+#define PIN_D1     17
+#define PIN_D2     18
+#define PIN_D3     19
+#define PIN_D4     20
+#define PIN_D5     21
+#define PIN_D6     22
+#define PIN_D7     23
+
+// Control signals
+#define PIN_RD     24   // Read strobe from MSX
+#define PIN_WR     25   // Write strobe from MSX
+#define PIN_IORQ   26   // IO Request line from MSX
+#define PIN_SLTSL  27   // Slot Select for this cartridge slot
+#define PIN_WAIT    28  // WAIT line to MSX 
+#define PIN_BUSSDIR 29  // Bus direction line to MSX
+
+// This symbol marks the end of the main program in flash.
+// Custom data starts right after it
+extern unsigned char __flash_binary_end;
+
+
+// Configuration flags
 static bool USE_SRAM_COPY = true; // Use SRAM copy of the ROM data
+
+//pointer to the custom data
+const uint8_t *rom = (const uint8_t *)&__flash_binary_end;
+
+// RAM buffer for the ROM data
+static uint8_t rom_sram[MAX_MEM_SIZE];
 
 // Struct to hold both address and data
 typedef struct {
     uint16_t address;
     uint8_t data;
 } bus_data_t;
+
+// Structure to represent a ROM record
+// The ROM record will contain the name of the ROM, the mapper code, the size of the ROM and the offset in the flash memory
+// Name: ROM_NAME_MAX bytes
+// Mapper: 1 byte
+// Size: 4 bytes
+// Offset: 4 bytes
+typedef struct {
+    char Name[ROM_NAME_MAX];
+    unsigned char Mapper;
+    unsigned long Size;
+    unsigned long Offset;
+} ROMRecord;
+
+ROMRecord records[MAX_ROM_RECORDS]; // Array to store the ROM records
+int record_count = 0;
 
 // Read both the address and data bus
 static inline bus_data_t read_address_and_data_bus(void) {
@@ -38,12 +112,11 @@ static inline bus_data_t read_address_and_data_bus(void) {
     return result;
 }
 
-/*
 // Read the address bus from the MSX
 static inline uint16_t read_address_bus(void) {
     // Return first 16 bits in the most efficient way
     return gpio_get_all() & 0x00FFFF;
-}*/
+}
 
 // Write a byte to the data bus
 static inline void write_data_bus(uint8_t data) 
@@ -157,21 +230,135 @@ void dump_rom_sram(uint32_t size)
     }
 }
 
+// read_ulong - Read a 4-byte value from the memory area
+// This function will read a 4-byte value from the memory area pointed by ptr and return the value as an unsigned long
+// Parameters:
+//   ptr - Pointer to the memory area to read the value from
+// Returns:
+//   The 4-byte value as an unsigned long 
+unsigned long read_ulong(const unsigned char *ptr) {
+    return (unsigned long)ptr[0] |
+           ((unsigned long)ptr[1] << 8) |
+           ((unsigned long)ptr[2] << 16) |
+           ((unsigned long)ptr[3] << 24);
+}
+
+// isEndOfData - Check if the memory area is the end of the data
+// This function will check if the memory area pointed by memory is the end of the data. The end of the data is defined by all bytes being 0xFF.
+// Parameters:
+//   memory - Pointer to the memory area to check
+// Returns:
+//   1 if the memory area is the end of the data, 0 otherwise
+int isEndOfData(const unsigned char *memory) {
+    for (int i = 0; i < ROM_RECORD_SIZE; i++) {
+        if (memory[i] != 0xFF) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+//load the MSX Menu ROM into the MSX
+int loadrom_msx_menu(uint32_t offset, uint32_t size)
+{
+    gpio_init(PIN_WAIT); gpio_set_dir(PIN_WAIT, GPIO_OUT);
+    gpio_put(PIN_WAIT, 0); // Wait until we are ready to read the ROM
+    //copy the flash content to pages 1 and 2 (0x4000-0x7FFF and 0x8000-0xBFFF)
+    memcpy(rom_sram + 0x4000, rom + offset, size);
+    // Fill the records array
+    uint8_t *record_ptr = rom_sram + 0x8000;
+
+    //read the roms from the configuration area
+    for (int i = 0; i < MAX_ROM_RECORDS; i++) 
+    {
+        if (isEndOfData(record_ptr)) {
+            break; // Stop if end of data is reached
+        }
+ 
+        // Copy data from ROM to the record array
+        memcpy(records[record_count].Name, record_ptr, ROM_NAME_MAX);
+        record_ptr += ROM_NAME_MAX;
+ 
+        records[record_count].Mapper = *record_ptr++;
+        records[record_count].Size = read_ulong(record_ptr);
+        record_ptr += sizeof(unsigned long);
+ 
+        records[record_count].Offset = read_ulong(record_ptr);
+        record_ptr += sizeof(unsigned long);
+ 
+        record_count++;
+    }
+
+    gpio_put(PIN_WAIT, 1); // Lets go!
+    uint8_t rom_index = 0;
+    // Set data bus to input mode
+    set_data_bus_input();
+    bool rom_selected = false;
+    while (true)  // Loop until a ROM is selected
+    {
+        // Check control signals
+        bool sltsl = (gpio_get(PIN_SLTSL) == 0); // Slot select (active low)
+        bool rd = (gpio_get(PIN_RD) == 0);       // Read cycle (active low)
+        bool wr = (gpio_get(PIN_WR) == 0);       // Write cycle (active low, not used)
+        
+        uint16_t addr = read_address_bus(); // Read the address bus
+
+        // MSX is requesting a memory read from this slot
+        if (sltsl) 
+        {
+            // Check if the address is within the ROM range
+            if (addr >= 0x4000 && addr <= 0xBFFF) 
+            {
+                uint16_t flash_offset = (addr - 0x4000) + offset;
+                if (rd)
+                {
+                    uint8_t data = USE_SRAM_COPY ? rom_sram[addr] : rom[flash_offset];
+                    //if (addr >= 0x4000 && addr <= 0xBFFF)  {}
+                    set_data_bus_output(); // Drive data bus to output mode
+                    write_data_bus(data);  // Drive data onto the bus
+                    while (gpio_get(PIN_RD) == 0)  // Wait until the read cycle completes (RD goes high)
+                    {
+                        tight_loop_contents();
+                    }
+                    set_data_bus_input(); // Return data lines to input mode after cycle completes
+                }
+                if (wr && addr == 0x9D01) // Monitor ROM address 0x9D01
+                {   
+                    rom_index = read_data_bus(); // Read the selected ROM index
+                    while (gpio_get(PIN_WR) == 0) {
+                        tight_loop_contents();
+                    }
+                    set_data_bus_input();
+                    rom_selected = true;    // ROM selected
+                }
+
+            } 
+            
+        }
+        // reset after loading ROM detected
+        // lets return the rom_index and load the selected ROM
+        if (rd && addr == 0x0000 && rom_selected)
+        {
+            return rom_index;
+        }
+    }
+}
+
 // Load a simple 32KB ROM into the MSX
-// 32KB ROMs are the most common ROMs for the MSX and are mapped to the 0x4000-0xBFFF range
 // They have two pages of 16Kb each in the following areas:
 // 0x4000-0x7FFF and 0x8000-0xBFFF
-// The ROM data is stored in the flash memory starting at __flash_binary_end + 0x1D00
-int loadrom_32k(uint32_t offset, uint32_t size)
+// AB is on 0x0000, 0x0001
+// The ROM data is stored in the flash memory starting at __flash_binary_end
+void loadrom_32k(uint32_t offset, uint32_t size)
 {
     // if SRAM copy is enabled, copy the ROM data to the SRAM buffer
     if (USE_SRAM_COPY) {
-       gpio_init(PIN_WAIT); gpio_set_dir(PIN_WAIT, GPIO_OUT);
-       gpio_put(PIN_WAIT, 0); // Wait until we are ready to read the ROM
-       memcpy(rom_sram, rom + offset, size);
-       gpio_put(PIN_WAIT, 1); // Lets go!
+        gpio_init(PIN_WAIT); gpio_set_dir(PIN_WAIT, GPIO_OUT);
+        gpio_put(PIN_WAIT, 0); // Wait until we are ready to read the ROM
+        memset(rom_sram, 0, MAX_MEM_SIZE); // Clear the SRAM buffer
+        memcpy(rom_sram+0x4000, rom + offset, size);
+        gpio_put(PIN_WAIT, 1); // Lets go!
     }
-
 
     // Set data bus to input mode
     set_data_bus_input();
@@ -180,50 +367,42 @@ int loadrom_32k(uint32_t offset, uint32_t size)
         // Check control signals
         bool sltsl = (gpio_get(PIN_SLTSL) == 0); // Slot select (active low)
         bool rd = (gpio_get(PIN_RD) == 0);       // Read cycle (active low)
-        bool wr = (gpio_get(PIN_WR) == 0);       // Write cycle (active low, not used)
-        
-        // MSX is requesting a memory read from this slot
-        if (sltsl && rd && !wr) 
+        uint16_t addr = read_address_bus();
+        if (sltsl) 
         {
-            bus_data_t bus_values = read_address_and_data_bus();
             // Check if the address is within the ROM range
-            if (bus_values.address >= 0x4000 && bus_values.address <= 0xBFFF) 
+            if (addr >= 0x4000 && addr <= 0xBFFF) 
             {
-                // Address is within the ROM range
-                uint16_t flash_offset = (bus_values.address - 0x4000) + offset;
-                uint8_t data = USE_SRAM_COPY ? rom_sram[(bus_values.address - 0x4000)] : rom[flash_offset];
-
-                // Drive data bus to output mode
-                set_data_bus_output();
-                // Drive data onto the bus
-                write_data_bus(data);
-                // Wait until the read cycle completes (RD goes high)
-                while (gpio_get(PIN_RD) == 0) {
-                    tight_loop_contents();
-                   }
-                // Return data lines to input mode after cycle completes
-                set_data_bus_input();
-
-            }
-        } else {
-            // Not a read cycle - ensure data bus is not driven
-            set_data_bus_input();
-        }
+                uint16_t flash_offset = (addr - 0x4000) + offset;
+                if (rd)
+                {
+                    uint8_t data = USE_SRAM_COPY ? rom_sram[addr] : rom[flash_offset];
+                    set_data_bus_output(); // Drive data bus to output mode
+                    write_data_bus(data);  // Drive data onto the bus
+                    while (gpio_get(PIN_RD) == 0)  // Wait until the read cycle completes (RD goes high)
+                    {
+                        tight_loop_contents();
+                    }
+                    set_data_bus_input(); // Return data lines to input mode after cycle completes
+                }
+            } 
+        } 
     }
-    return 0;
 }
+
 
 // Load a simple 48KB Linear0 ROM into the MSX
 // Those ROMs have three pages of 16Kb each in the following areas:
 // 0x0000-0x3FFF, 0x4000-0x7FFF and 0x8000-0xBFFF
 // AB is on 0x4000, 0x4001
 // The ROM data is stored in the flash memory starting at __flash_binary_end
-int loadrom_48k_Linear0(uint32_t offset, uint32_t size)
+void loadrom_48k_Linear0(uint32_t offset, uint32_t size)
 {
     // if SRAM copy is enabled, copy the ROM data to the SRAM buffer
     if (USE_SRAM_COPY) {
        gpio_init(PIN_WAIT); gpio_set_dir(PIN_WAIT, GPIO_OUT);
        gpio_put(PIN_WAIT, 0); // Wait until we are ready to read the ROM
+       memset(rom_sram, 0, MAX_MEM_SIZE); // Clear the SRAM buffer
        memcpy(rom_sram, rom + offset, size);
        gpio_put(PIN_WAIT, 1); // Lets go!
     }
@@ -235,37 +414,29 @@ int loadrom_48k_Linear0(uint32_t offset, uint32_t size)
         // Check control signals
         bool sltsl = (gpio_get(PIN_SLTSL) == 0); // Slot select (active low)
         bool rd = (gpio_get(PIN_RD) == 0);       // Read cycle (active low)
-        bool wr = (gpio_get(PIN_WR) == 0);       // Write cycle (active low, not used)
-        
-        // MSX is requesting a memory read from this slot
-        if (sltsl && rd && !wr) 
-        {
-            //uint16_t addr = read_address_bus();
-            bus_data_t bus_values = read_address_and_data_bus();
-            // Check if the address is within the ROM range
-            if (bus_values.address >= 0x0000 && bus_values.address <= 0xBFFF) 
-            {
-                // Address is within the ROM range
-                uint16_t flash_offset = bus_values.address + offset;
-                uint8_t data = USE_SRAM_COPY ? rom_sram[bus_values.address] : rom[flash_offset];
+        uint16_t addr = read_address_bus();
 
-                // Drive data bus to output mode
-                set_data_bus_output();
-                // Drive data onto the bus
-                write_data_bus(data);
-                // Wait until the read cycle completes (RD goes high)
-                while (gpio_get(PIN_RD) == 0) {
-                    tight_loop_contents();
-                   }
-                // Return data lines to input mode after cycle completes
-                set_data_bus_input();
+        // MSX is requesting a memory read from this slot
+        if (sltsl) 
+        {
+            // Check if the address is within the ROM range
+            if (addr >= 0x0000 && addr <= 0xBFFF) 
+            {
+                uint16_t flash_offset = addr + offset;
+                if (rd)
+                {
+                    uint8_t data = USE_SRAM_COPY ? rom_sram[addr] : rom[flash_offset];
+                    set_data_bus_output(); // Drive data bus to output mode
+                    write_data_bus(data);  // Drive data onto the bus
+                    while (gpio_get(PIN_RD) == 0) // Wait until the read cycle completes (RD goes high)
+                    {
+                        tight_loop_contents();
+                    }
+                    set_data_bus_input(); // Return data lines to input mode after cycle completes
+                }    
             }
-        } else {
-            // Not a read cycle - ensure data bus is not driven
-            set_data_bus_input();
-        }
+        } 
     }
-    return 0;
 }
 
 // Load a KonamiSCC ROM into the MSX
@@ -277,42 +448,7 @@ int loadrom_KonamiSCC(uint32_t offset, uint32_t size)
 // Main function running on core 1
 void core1_entry() {
     // Task for core 1
-    // We may need a mutex depending of what kind of racing condition we may have
-    // pending research
-    while (true) 
-    {
-        // intercepts IORQ operation on port 0x20
-        // if the value is 0x20, it means that the user selected a ROM to be loaded
-        // data bus will have the index of the ROM to be loaded
-        // the ROM will be loaded into the MSX and the MSX will be reseted to run the selected ROM
-
-        // Check control signals
-        bool iorq = (gpio_get(PIN_IORQ) == 0); // IORQ signal (active low)
-        if (iorq) {
-            //uint16_t addr = read_address_bus();
-            set_data_bus_input();
-            bus_data_t bus_values = read_address_and_data_bus();
-
-            // Check if the address is 0x20
-            if ((bus_values.address & 0xFF) == 0x20) 
-            {
-                // Set data bus to input mode to read data from MSX
-                //set_data_bus_input();
-                uint8_t rom_index = bus_values.data+1; // this is because the MSX menu which is the index 0 is never shown on the interface
-                // Read the data bus to get the ROM index
-                printf("Debug: Data bus value for addr 0x20 is %d\n", rom_index);
-
-                // Implement the logic to load the selected ROM based on rom_index
-                // ...
-
-                // Reset the MSX to run the selected ROM
-                // ...
-            }
-        }
-
-    }
 }
-
 
 // Main function running on core 0
 int main()
@@ -325,19 +461,20 @@ int main()
     // Initialize GPIO
     setup_gpio();
 
-    // Start core 1
+    // Start core 1 tasks
     multicore_launch_core1(core1_entry);
 
     printf("Debug: Loading the MSX Menu ROM\n");
-    // The configuration area has (256 * (20 + 1 + 4 + 4)) = 7424 bytes (0x1d00h)
-    // So the ROM data starts at __flash_binary_end & 0x1d0
-    // the ROM reading is a blocking operation, so while the game is running, load_rom will be mapping addresses to the MSX
-    // whithin the memory range for the ROM. core 1 runs a routine to control when the loadrom needs to leave the loop
-    int ret = loadrom_32k(0x0000, 32768); //load the first 32KB ROM into the MSX
+    int rom_index = loadrom_msx_menu(0x0000, 32768); //load the first 32KB ROM into the MSX (The MSX PICOVERSE MENU)
+    printf("Debug: ROM index selected: %d\n", rom_index);
+    printf("Debug: Loading the selected ROM: %s\n", records[rom_index].Name);
+    printf("Debug: Mapper: %d\n", records[rom_index].Mapper);
+    printf("Debug: Size: %d\n", records[rom_index].Size);
+    printf("Debug: Offset: %d\n", records[rom_index].Offset);
+    if ((records[rom_index].Size == 32768) || (records[rom_index].Size == 16384))
+        loadrom_32k(records[rom_index].Offset, records[rom_index].Size); //load the selected ROM into the MSX
+    else if (records[rom_index].Size == 49152)
+        loadrom_48k_Linear0(records[rom_index].Offset, records[rom_index].Size); //load the selected ROM into the MSX
+    printf("Debug: MSX Menu ROM loaded\n");
 
-    if (ret != 0) {
-        printf("Debug: Error loading ROM!\n");
-    }
-
-    return 0;
 }

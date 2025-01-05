@@ -93,6 +93,12 @@ int putchar (int character)
     return character;
 }
 
+void execute_rst00() {
+    __asm
+        rst 0x00
+    __endasm;
+}
+
 // invert_chars - Invert the characters in the character table
 // This function will invert the characters from startChar to endChar in the character table. We use it to copy and invert the characters from the
 // normal character table area to the inverted character table area. This is to display the game names in the inverted character table.
@@ -159,7 +165,7 @@ void print_str_inverted(const char *str)
 //  1: 16KB, 2: 32KB, 3: Konami, 4: Linear0
 char* mapper_description(int number) {
     // Array of strings for the descriptions
-    const char *descriptions[] = {"16KB", "32KB", "KONAMI", "LINEAR0"};
+    const char *descriptions[] = {"PLAIN16", "PLAIN32", "KONAMI", "LINEAR0"};
     return descriptions[number - 1];
 }
 
@@ -167,18 +173,21 @@ char* mapper_description(int number) {
 // This function will display the menu on the screen. It will print the header, the files on the current page and the footer with the page number and options.
 void displayMenu() {
     
+    //Screen(0);
+    //invert_chars(32, 126); // Invert the characters from 32 to 126
     Cls(); // Clear the screen
-
-    // header
+    Locate(0, 0);
     printf("MSX PICOVERSE 2040     [MultiROM v1.0]");
     Locate(0, 1);
     printf("--------------------------------------");
     unsigned char xi = currentIndex%(FILES_PER_PAGE-1); // Calculate the index of the file to start displaying
     for (int i = 0; (i < FILES_PER_PAGE) && (xi<totalFiles-1) ; i++)  // Loop through the files
-    {
-        Locate(1, 2 + i); // Position on the screen, starting at line 2
+    {   
+        //Locate(0, 2 + i); // Position on the screen, starting at line 2
+        //printf(" ");
+        Locate(0, 2 + i); // Position on the screen, starting at line 2
         xi = i+((currentPage-1)*FILES_PER_PAGE); // Calculate the index of the file to display
-        printf("%-22s %4luKB %-8s",records[xi].Name, records[xi].Size/1024, mapper_description(records[xi].Mapper));  // Print each file name, size and mapper
+        printf(" %-22s %4luKB %-8s",records[xi].Name, records[xi].Size/1024, mapper_description(records[xi].Mapper));  // Print each file name, size and mapper
     }
     // footer
     Locate(0, 21);
@@ -226,13 +235,17 @@ void charMap() {
 // This function will display the configuration menu on the screen. 
 void configMenu()
 {
+    
+
     Cls(); // Clear the screen
+    Locate(0,0);
     printf("MSX PICOVERSE 2040     [MultiROM v1.0]");
     Locate(0, 1);
     printf("---------------------------------------");
     Locate(0, 2);
 
-    //To be implemented
+   
+    
 
     Locate(0, 21);
     printf("--------------------------------------");
@@ -249,6 +262,7 @@ void helpMenu()
 {
     
     Cls(); // Clear the screen
+    Locate(0,0);
     printf("MSX PICOVERSE 2040     [MultiROM v1.0]");
     Locate(0, 1);
     printf("---------------------------------------");
@@ -265,7 +279,7 @@ void helpMenu()
     Locate(0, 8);
     printf("128=");PrintChar(128); 
     Locate(0, 10);
-    charMap();
+    //charMap();
 
     Locate(0, 21);
     printf("--------------------------------------");
@@ -280,7 +294,9 @@ void helpMenu()
 // This function will load the game from the flash memory based on the index. 
 void loadGame(int index) 
 {
-    OutPort(0x20, index); // Disable the ROM
+    Poke(0x9D01, index); // Set the game index
+    execute_rst00();
+    execute_rst00();
 }
 
 // navigateMenu - Navigate the menu
@@ -293,18 +309,15 @@ void navigateMenu()
 
     while (1) 
     {
-
-        //debug
-        Locate(18, 23);
-        printf("CPage: %2d Index: %2d", currentPage, currentIndex);
-
-        Locate(0, (currentIndex%FILES_PER_PAGE) + 2);
-        //key = WaitKey();
-        key = InputChar();
         //debug
         Locate(0, 23);
         printf("Key: %3d", key);
-
+        //debug
+        Locate(18, 23);
+        printf("CPage: %2d Index: %2d", currentPage, currentIndex);
+        Locate(0, (currentIndex%FILES_PER_PAGE) + 2);
+        //key = WaitKey();
+        key = InputChar();
         Locate(0, (currentIndex%FILES_PER_PAGE) + 2); // Position the cursor on the selected file
         printf(" "); // Clear the cursor
         printf(records[currentIndex].Name); // Print the file name
@@ -376,7 +389,7 @@ void main() {
     totalPages = (int)((totalFiles/FILES_PER_PAGE)+1); // Calculate the total pages based on the total files and files per page
 
     Screen(0); // Set the screen mode
-    invert_chars(32, 126);
+    invert_chars(32, 126); // Invert the characters from 32 to 126
 
     // Display the menu
     displayMenu();

@@ -4,23 +4,22 @@
 //
 // multirom.c - Windows console application to create a multirom binary file for the MSX PICOVERSE 2040
 //
-// This is a program to create a UF2 file to program the MSX PICOVERSE 2040 with multiple ROM files. It reads all the .ROM files in the current directory 
-// and creates a binary file with a maximum of 256 records of 29 bytes. Each record represents one ROM processed by the tool. The resultant binary file 
-// has 7424 bytes and is appended right after the main firmware that runs on the Raspberry Pi Pico.
+// This program creates a UF2 file to program the Raspberry Pi Pico with the MSX PICOVERSE 2040 MultiROM firmware. The UF2 file is
+// created with the combined PICO firmware binary file, the MSX MENU ROM file, the configuration file and the ROM files. The 
+// configuration file contains the information of each ROM file processed by the tool and it is incorporated into the MENU ROM file 
+// so the MSX can read it.
+// 
 // Each record has the following structure:
 //  game - Game name                            - 20 bytes (padded by 0x00)
 //  mapp - Mapper code                          - 01 byte  (0x01: 16KB, 0x02: 32KB, 0x03: Konami, 0x04: Linear0)
 //  size - Size of the game in bits             - 4 bytes 
 //  offset - Offset of the game in the flash    - 4 bytes 
 //
-// Offset is calculated by the size of the firmware + 7424 bytes.
-// The program will pad the binary file with 0x00 bytes if the file size is less than 7424 bytes.
-// The program will print the information of each ROM file processed.
-// 
-// The program is intended to be used on Windows, but it can be easily ported to other platforms.
 // 
 // This work is licensed  under a "Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
 // License". https://creativecommons.org/licenses/by-nc-sa/4.0/
+//
+
 #include <stdio.h>
 #include <stdint.h>
 #include <dirent.h>
@@ -35,6 +34,7 @@
 #define MAX_FILE_NAME_LENGTH    20          // Maximum length of a ROM name
 #define TARGET_FILE_SIZE        32768       // Size of the combined MSX MENU ROM and the configuration file
 #define FLASH_START             0x10000000  // Start of the flash memory on the Raspberry Pi Pico
+#define MAX_ROM_FILES           256         // Maximum number of ROM files
 
 
 // Structure to store file information
@@ -168,7 +168,7 @@ int main()
     size_t current_size = 0; // Current size of the output file
     int file_index = 1; // Index of the ROM file
     uint32_t FIRMWARE_BINARY_SIZE = file_size(PICOFIRMWARE); // Size of the PICO firmware binary file
-    uint32_t base_offset = FLASH_START + FIRMWARE_BINARY_SIZE + TARGET_FILE_SIZE; // Base offset for the ROM files = Firmware + 32KB MSX MENU
+    uint32_t base_offset = TARGET_FILE_SIZE; // Base offset for the ROM files = 32KB MSX MENU
     FileInfo files[256]; // Array to store file information
     int file_count = 0; // Number of ROM files processed
 
@@ -239,7 +239,6 @@ int main()
             strncpy(files[file_count].file_name, entry->d_name, sizeof(files[file_count].file_name));
             files[file_count].file_size = rom_size;
             file_count++;
-
             file_index++;
         }
     }
@@ -308,12 +307,12 @@ int main()
     // Pad the remaining space to reach 32KB
     write_padding(final_output_file, total_bytes_written, TARGET_FILE_SIZE, 0xFF);
 
-    // Close the final output file
-    fclose(final_output_file);
-
+    printf("About to append the ROM files to the final output file...\n");
+    printf("File count = %d\n", file_count);
     // Append the content of each ROM file to the final output file in the same order
-    for (int i = 1; i < file_count; i++) {
+    for (int i = 0; i < file_count; i++) {
         input_file = fopen(files[i].file_name, "rb");
+        printf("Appending ROM file %s to the final output file...\n", files[i].file_name);
         if (!input_file) {
             perror("Failed to open ROM file");
             continue;
