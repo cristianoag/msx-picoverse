@@ -73,8 +73,6 @@ The Flashrom firmware allows loading ROMs from the Raspberry Pi Pico's flash mem
 
 You can then push and hold the BOOTSEL button on the cartridge to format the drive and then drag and drop ROM files to it. The cartridge will then read the ROM files and make them available to the MSX computer user via a menu system. The user can then select the ROM to be loaded into the MSX computer.
 
-![alt text](/images/flashrom1.jpg)
-
 * FatFS - http://elm-chan.org/fsw/ff/
 * PicoUSB Flash Drive - https://github.com/oyama/pico-usb-flash-drive
 * SPIFTL - Embedded, Static Wear-Leveling FTL Library - https://github.com/earlephilhower/SPIFTL
