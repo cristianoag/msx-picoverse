@@ -162,10 +162,10 @@ void print_str_inverted(const char *str)
 //   number - The mapper code
 // Returns:
 //  The description of the mapper
-//  1: 16KB, 2: 32KB, 3: Konami, 4: Linear0
+//  1: Plain16, 2: Plain32, 3: KonamiS, 4: Linear0
 char* mapper_description(int number) {
     // Array of strings for the descriptions
-    const char *descriptions[] = {"PLAIN16", "PLAIN32", "KONAMI", "LINEAR0"};
+    const char *descriptions[] = {"PLAIN16", "PLAIN32", "KONAMIS", "LINEAR0"};
     return descriptions[number - 1];
 }
 
@@ -294,9 +294,12 @@ void helpMenu()
 // This function will load the game from the flash memory based on the index. 
 void loadGame(int index) 
 {
-    Poke(0x9D01, index); // Set the game index
-    execute_rst00();
-    execute_rst00();
+    if (records[index].Mapper < 9)
+    {
+        Poke(0x9D01, index); // Set the game index
+        execute_rst00();
+        execute_rst00();
+    }
 }
 
 // navigateMenu - Navigate the menu

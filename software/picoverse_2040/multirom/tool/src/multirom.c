@@ -82,29 +82,42 @@ uint32_t file_size(const char *filename) {
     return size;
 }
 
-// Function to discover the mapper of the ROM file
-// At this moment, the function only checks if the file size is 16KB, 32KB or 48KB
-// Need to modify to detect the mapper type
-uint8_t discover_mapper(const char *filename) {
-    uint8_t one_byte = 0;
-    uint32_t size = file_size(filename);
-
-    switch (size) {
-        case 16384:
-            one_byte = 1; // 16KB mapper
-            break;
-        case 32768:
-            one_byte = 2; // 32KB mapper
-            break;
-        case 49152:
-            one_byte = 4; // 32KB mapper
-            break;
-        default:
-            one_byte = 9; // unknown mapper
-            break;
+// Detect the ROM type by analyzing the AB signature at 0x0000 and 0x0001 or 0x4000 and 0x4001
+static uint32_t detect_rom_type(const char *filename) {
+    FILE *file = fopen(filename, "rb");
+    if (!file) {
+        perror("Failed to open ROM file");
+        return 9; // unknown mapper
     }
 
-    return one_byte;
+    uint8_t rom[131072]; // Buffer to hold the ROM data
+    size_t size = fread(rom, 1, sizeof(rom), file);
+    fclose(file);
+
+    if (size > 131072) {
+        return 9; // unknown mapper
+    }
+
+    // Check if the ROM has the signature "AB" at 0x0000 and 0x0001
+    // Those are the cases for 16KB and 32KB ROMs
+    if (rom[0] == 'A' && rom[1] == 'B' && size == 16384) {
+        return 1;     // Plain 16KB 
+    }
+    if (rom[0] == 'A' && rom[1] == 'B' && size == 32768) {
+        return 2;     // Plain 32KB 
+    }
+    // Check if the ROM has the signature "AB" at 0x4000 and 0x4001
+    // That is the case for 48KB ROMs with Linear page 0 config
+    if (rom[0x4000] == 'A' && rom[0x4001] == 'B') {
+        return 4; // Linear0 48KB
+    }
+    // Check if the ROM has the signature "AB" at 0x0000 and 0x0001
+    // and size is 128KB. This is the case for Konami SCC ROMs
+    if (rom[0] == 'A' && rom[1] == 'B' && size == 131072) {
+        return 3; // Konami SCC
+    }
+
+    return 9; 
 }
 
 // create_uf2_file - Create the UF2 file
@@ -217,7 +230,7 @@ int main()
             rom_size = file_size(entry->d_name);
 
             // Write the mapper (1 byte)
-             uint8_t mapper_byte = discover_mapper(entry->d_name);
+             uint8_t mapper_byte = detect_rom_type(entry->d_name);
              fwrite(&mapper_byte, 1, 1, output_file);
              current_size += 1;
 

@@ -322,7 +322,7 @@ void loadrom_konamiscc(uint32_t offset, uint32_t size)
 {
     gpio_init(PIN_WAIT); gpio_set_dir(PIN_WAIT, GPIO_OUT);
     gpio_put(PIN_WAIT, 0); // Wait until we are ready to read the ROM
-    memcpy(rom_sram, rom + offset, size);  // for 48KB Linear0 ROMs we start at 0x0000
+    memcpy(rom_sram, rom + offset, size);  // for 128KB KonamiSCC ROMs we start at 0x0000
     gpio_put(PIN_WAIT, 1); // Lets go!
 
 
@@ -369,7 +369,6 @@ void loadrom_konamiscc(uint32_t offset, uint32_t size)
             }
         }
     }
-
 }
 
 // -----------------------
