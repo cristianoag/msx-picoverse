@@ -2,6 +2,9 @@
     "files.associations": {
         "flash.h": "c",
         "menu.h": "c",
-        "bios.h": "c"
+        "bios.h": "c",
+        "stdio.h": "c",
+        "dirent.h": "c",
+        "uf2format.h": "c"
     }
 }

@@ -394,6 +394,12 @@ void loadrom_48k_Linear0(uint32_t offset, uint32_t size)
     memcpy(rom_sram, rom + offset, size);
     gpio_put(PIN_WAIT, 1); // Lets go!
 
+
+    while(1){
+        dump_rom_sram(size);
+        sleep_ms(000);
+    }
+
     // Set data bus to input mode
     set_data_bus_input();
     while (true) 

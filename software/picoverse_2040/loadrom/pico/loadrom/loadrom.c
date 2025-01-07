@@ -16,8 +16,9 @@
 #include "pico/stdlib.h"
 #include "hardware/clocks.h"
 
-#define MAX_MEM_SIZE (128*1024) // Maximum memory size
-#define MAX_ROM_SIZE (128*1024) // Maximum ROM Size
+#define MAX_MEM_SIZE        (131072)  // Maximum memory size
+#define ROM_NAME_MAX        20          // Maximum ROM name length
+#define SIZE_CONFIG_RECORD  29          // Size of the configuration record in the ROM
 
 // -----------------------
 // User-defined pin assignments for the Raspberry Pi Pico
@@ -168,24 +169,38 @@ static inline void setup_gpio()
     gpio_init(PIN_BUSSDIR); gpio_set_dir(PIN_BUSSDIR, GPIO_IN);
 }
 
-// Detect the ROM type by analyzing the AB signature at 0x0000 and 0x0001 or 0x4000 and 0x4001
-static uint32_t detect_rom_type(const uint8_t *rom, size_t size) {
-    // Check if the ROM has the signature "AB" at 0x0000 and 0x0001
-    // Those are the cases for 16KB and 32KB ROMs
-    if (rom[0] == 'A' && rom[1] == 'B') {
-        return 1;     // Plain 16KB or 32KB
+
+// Dump the ROM data in hexdump format
+// debug function
+void dump_rom_sram(uint32_t size)
+{
+    // Dump the ROM data in hexdump format
+    for (int i = 0; i < size; i += 16) {
+        // Print the address offset
+        printf("%08x  ", i);
+
+        // Print 16 bytes of data in hexadecimal
+        for (int j = 0; j < 16 && (i + j) < size; j++) {
+            printf("%02x ", rom_sram[i + j]);
+        }
+
+        // Add spacing if the last line has fewer than 16 bytes
+        for (int j = size - i; j < 16 && i + j < size; j++) {
+            printf("   ");
+        }
+
+        // Print the ASCII representation of the data
+        printf(" |");
+        for (int j = 0; j < 16 && (i + j) < size; j++) {
+            char c = rom_sram[i + j];
+            if (c >= 32 && c <= 126) {
+                printf("%c", c);  // Printable ASCII character
+            } else {
+                printf(".");      // Non-printable character
+            }
+        }
+        printf("|\n");
     }
-    // Check if the ROM has the signature "AB" at 0x4000 and 0x4001
-    // That is the case for 48KB ROMs with Linear page 0 config
-    if (rom[0x4000] == 'A' && rom[0x4001] == 'B') {
-        return 4; // Linear0 48KB
-    }
-    // Check if the ROM has the signature "AB" at 0x0000 and 0x0001
-    // and size is 128KB. This is the case for Konami SCC ROMs
-    if (rom[0] == 'A' && rom[1] == 'B' && size == 131072) {
-        return 3; // Konami SCC
-    }
-    return 9; 
 }
 
 // Load a simple 32KB ROM into the MSX
@@ -198,6 +213,7 @@ void loadrom_plain32(uint32_t offset, uint32_t size)
     //setup the rom_sram buffer for the 32KB ROM
     gpio_init(PIN_WAIT); gpio_set_dir(PIN_WAIT, GPIO_OUT);
     gpio_put(PIN_WAIT, 0); // Wait until we are ready to read the ROM
+    memset(rom_sram, 0, MAX_MEM_SIZE); // Clear the SRAM buffer
     memcpy(rom_sram + 0x4000, rom + offset, size); //for 32KB ROMs we start at 0x4000
     gpio_put(PIN_WAIT, 1); // Lets go!
 
@@ -238,6 +254,7 @@ void loadrom_linear48(uint32_t offset, uint32_t size)
 
     gpio_init(PIN_WAIT); gpio_set_dir(PIN_WAIT, GPIO_OUT);
     gpio_put(PIN_WAIT, 0); // Wait until we are ready to read the ROM
+    memset(rom_sram, 0, MAX_MEM_SIZE); // Clear the SRAM buffer
     memcpy(rom_sram, rom + offset, size);  // for 48KB Linear0 ROMs we start at 0x0000
     gpio_put(PIN_WAIT, 1); // Lets go!
 
@@ -268,38 +285,7 @@ void loadrom_linear48(uint32_t offset, uint32_t size)
     }
 }
 
-// Dump the ROM data in hexdump format
-// debug function
-void dump_rom_sram(uint32_t size)
-{
-    // Dump the ROM data in hexdump format
-    for (int i = 0; i < size; i += 16) {
-        // Print the address offset
-        printf("%08x  ", i);
 
-        // Print 16 bytes of data in hexadecimal
-        for (int j = 0; j < 16 && (i + j) < size; j++) {
-            printf("%02x ", rom_sram[i + j]);
-        }
-
-        // Add spacing if the last line has fewer than 16 bytes
-        for (int j = size - i; j < 16 && i + j < size; j++) {
-            printf("   ");
-        }
-
-        // Print the ASCII representation of the data
-        printf(" |");
-        for (int j = 0; j < 16 && (i + j) < size; j++) {
-            char c = rom_sram[i + j];
-            if (c >= 32 && c <= 126) {
-                printf("%c", c);  // Printable ASCII character
-            } else {
-                printf(".");      // Non-printable character
-            }
-        }
-        printf("|\n");
-    }
-}
 
 // Load a 128KB Konami SCC ROM into the MSX
 // The KonamiSCC ROM is divided into 8KB segments, managed by a memory mapper that allows dynamic switching of these segments into the MSX's address space
@@ -322,9 +308,9 @@ void loadrom_konamiscc(uint32_t offset, uint32_t size)
 {
     gpio_init(PIN_WAIT); gpio_set_dir(PIN_WAIT, GPIO_OUT);
     gpio_put(PIN_WAIT, 0); // Wait until we are ready to read the ROM
+    memset(rom_sram, 0, MAX_MEM_SIZE); // Clear the SRAM buffer
     memcpy(rom_sram, rom + offset, size);  // for 128KB KonamiSCC ROMs we start at 0x0000
     gpio_put(PIN_WAIT, 1); // Lets go!
-
 
     uint8_t bank_registers[4] = {0, 1, 2, 3}; // Initial banks 0-3 mapped
 
@@ -383,9 +369,34 @@ int main()
     // Initialize GPIO
     setup_gpio();
 
-    uint32_t rom_size = detect_rom_type(rom, MAX_ROM_SIZE);
+    // Detect the ROM type
+    char rom_name[ROM_NAME_MAX];
+    memcpy(rom_name, rom, ROM_NAME_MAX);
+    uint8_t rom_type = rom[ROM_NAME_MAX];
+    uint32_t rom_size;
+    memcpy(&rom_size, rom + ROM_NAME_MAX + 1, sizeof(uint32_t));
 
-    loadrom_konamiscc(0x0000, MAX_ROM_SIZE);
+    // Print the ROM name and type
+    printf("ROM name: %s\n", rom_name);
+    printf("ROM type: %d\n", rom_type);
+    printf("ROM size: %d\n", rom_size);
 
+    // Load the ROM based on the detected type
+    switch (rom_type) 
+    {
+        case 1:
+        case 2:
+            loadrom_plain32(0x1d, rom_size);
+            break;
+        case 3:
+            loadrom_konamiscc(0x1d, rom_size);
+            break;
+        case 4:
+            loadrom_linear48(0x1d, rom_size);
+            break;
+        default:
+            printf("Unknown ROM type: %d\n", 1);
+            break;
+    }
     return 0;
 }

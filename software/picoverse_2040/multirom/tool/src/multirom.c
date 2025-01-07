@@ -49,7 +49,7 @@ typedef struct {
 void create_uf2_file(const char *combined_filename, const char *uf2_filename);
 void write_padding(FILE *file, size_t current_size, size_t target_size, uint8_t padding_byte);
 uint32_t file_size(const char *filename);
-uint8_t discover_mapper(const char *filename);
+uint8_t detect_rom_type(const char *filename);
 
 // Function to write padding to the file
 // This function will write padding bytes to the file to reach the target size
@@ -83,7 +83,7 @@ uint32_t file_size(const char *filename) {
 }
 
 // Detect the ROM type by analyzing the AB signature at 0x0000 and 0x0001 or 0x4000 and 0x4001
-static uint32_t detect_rom_type(const char *filename) {
+static uint8_t detect_rom_type(const char *filename) {
     FILE *file = fopen(filename, "rb");
     if (!file) {
         perror("Failed to open ROM file");
