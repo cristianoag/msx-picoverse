@@ -53,11 +53,7 @@ PicoVerse 2350 cartridges are based on development boards that expose 48 GPIO pi
 
 ### PicoVerse 2040
 
-| PicoVerse 2040 MultiROM Menu | 
-|---------|
-| <img src="images/2024-12-30_20-05.png" width="300"/> | 
-
-The software for the PicoVerse cartridges is being developed. The software will be fully open-sourced. 
+The software for the PicoVerse cartridges is being developed and it will be fully open-sourced. 
 
 The RP2040 based carts are also compatible with the [MSX&#960;](https://github.com/piigaa-densetu-two-dai/MSXpi) project created by @piigaa-densetu-two-dai, so you can use any of the software alternatives created for that board with this open source hardware.
 
