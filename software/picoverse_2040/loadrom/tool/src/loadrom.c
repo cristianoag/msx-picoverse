@@ -69,7 +69,15 @@ uint32_t file_size(const char *filename) {
     return size;
 }
 
-// Detect the ROM type by analyzing the AB signature at 0x0000 and 0x0001 or 0x4000 and 0x4001
+
+// Detect the rom type using a heuristic approach
+// 1 - 16KB ROM
+// 2 - 32KB ROM
+// 3 - Konami SCC ROM
+// 4 - 48KB Linear0 ROM
+// 5 - ASCII8 ROM
+// 6 - ASCII16 ROM
+// 7 - Konami (without SCC) ROM
 uint8_t detect_rom_type(const char *filename) {
     
     size_t size = file_size(filename);
@@ -98,33 +106,72 @@ uint8_t detect_rom_type(const char *filename) {
     }
     // Check if the ROM has the signature "AB" at 0x4000 and 0x4001
     // That is the case for 48KB ROMs with Linear page 0 config
-    if (rom[0x4000] == 'A' && rom[0x4001] == 'B') {
+    if (rom[0x4000] == 'A' && rom[0x4001] == 'B' && size == 49152) {
         return 4; // Linear0 48KB
     }
 
-    // Konami SCC
-    for (size_t i = 0; i < size - 16; i++) {
-        if (rom[i] == 0x50 && rom[i + 1] == 0x50 && rom[i + 2] == 0x50) {
+    // Heuristic analysis for larger ROMs
+    if (size > 32768) {
+        // Initialize counters for different mapper types
+        int konami_count = 0;
+        int konami_scc_count = 0;
+        int ascii8_count = 0;
+        int ascii16_count = 0;
+
+        // Scan through the ROM data to detect patterns
+        for (size_t i = 0; i < size - 3; i++) {
+            if (rom[i] == 0x32) { // Check for 'ld (nnnn),a' instruction
+                uint16_t addr = rom[i + 1] | (rom[i + 2] << 8);
+                switch (addr) {
+                    case 0x4000:
+                    case 0x8000:
+                    case 0xA000:
+                        konami_count++;
+                        break;
+                    case 0x5000:
+                    case 0x9000:
+                    case 0xB000:
+                        konami_scc_count++;
+                        break;
+                    case 0x6000:
+                        konami_count++;
+                        ascii8_count++;
+                        ascii16_count++;
+                        break;
+                    case 0x7000:
+                        konami_scc_count++;
+                        ascii8_count++;
+                        ascii16_count++;
+                        break;
+                    case 0x6800:
+                    case 0x7800:
+                        ascii8_count++;
+                        break;
+                    case 0x77FF:
+                        ascii16_count++;
+                        break;
+                    // Add more cases as needed
+                }
+            }
+        }
+    
+        // Determine the ROM type based on the highest count
+        if (konami_scc_count > konami_count && konami_scc_count > ascii8_count && konami_scc_count > ascii16_count) {
             return 3;
         }
-    }
+        if (konami_count > konami_scc_count && konami_count > ascii8_count && konami_count > ascii16_count) {
+            return 7;
+        }
+        if (ascii8_count > konami_count && ascii8_count > konami_scc_count && ascii8_count > ascii16_count) {
+            return 5;
+        }
+        if (ascii16_count > konami_count && ascii16_count > konami_scc_count && ascii16_count > ascii8_count) {
+            return 6;
+        }
 
-    // ASCII 8KB
-    if (rom[0] == 'A' && rom[1] == 'S' && rom[2] == 'C' && rom[3] == '8') {
-        return 5;
+        return 0;
     }
-
-    // ASCII 16KB
-    if (rom[0] == 'A' && rom[1] == 'S' && rom[2] == 'C' && rom[3] == '1') {
-        return 6;
-    }
-
-    // Konami without SCC
-    if (rom[0] == 'K' && rom[1] == 'O' && rom[2] == 'N' && rom[3] == 'A') {
-        return 7;
-    }
-
-    return 0; 
+   
 }
 
 

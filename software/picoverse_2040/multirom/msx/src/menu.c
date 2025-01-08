@@ -58,7 +58,7 @@ void readROMData(ROMRecord *records, unsigned char *recordCount) {
     while (count < MAX_ROM_RECORDS && !isEndOfData(memory)) {
         // Copy Name
         MemCopy(records[count].Name, memory, 20);
-        records[count].Name[19] = '\0'; // Ensure null termination
+        //records[count].Name[19] = '\0'; // Ensure null termination
         records[count].Mapper = memory[20]; // Read Mapper code
         records[count].Size = read_ulong(&memory[21]); // Read Size (4 bytes)
         records[count].Offset = read_ulong(&memory[25]); // Read Offset (4 bytes)
@@ -156,16 +156,9 @@ void print_str_inverted(const char *str)
     }
 }
 
-// mapper_description - Get the description of the mapper to be printed
-// This function will return the description of the mapper based on the mapper code. The description will be used to display the mapper type on the menu.
-// Parameters:
-//   number - The mapper code
-// Returns:
-//  The description of the mapper
-//  1: Plain16, 2: Plain32, 3: KonamiS, 4: Linear0
 char* mapper_description(int number) {
     // Array of strings for the descriptions
-    const char *descriptions[] = {"PLAIN16", "PLAIN32", "KONAMIS", "LINEAR0"};
+    const char *descriptions[] = {"Plain16", "Plain32", "KonamiS", "Linear0", "ASCII8", "ASCII16", "Konami"};	
     return descriptions[number - 1];
 }
 
@@ -187,7 +180,9 @@ void displayMenu() {
         //printf(" ");
         Locate(0, 2 + i); // Position on the screen, starting at line 2
         xi = i+((currentPage-1)*FILES_PER_PAGE); // Calculate the index of the file to display
-        printf(" %-22s %4luKB %-8s",records[xi].Name, records[xi].Size/1024, mapper_description(records[xi].Mapper));  // Print each file name, size and mapper
+        //printf(" %-22s %4luKB %-8s",records[xi].Name, records[xi].Size/1024, rom_types[records[xi].Mapper]);  // Print each file name, size and mapper
+        printf(" %-22s %4lukb %-8s",records[xi].Name, records[xi].Size/1024, mapper_description(records[xi].Mapper));  // Print each file name, size and mapper
+
     }
     // footer
     Locate(0, 21);

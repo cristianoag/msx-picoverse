@@ -22,6 +22,17 @@ typedef struct {
     unsigned long Offset;
 } ROMRecord;
 
+const char *rom_types[] = {
+    "Unknown",          // Default for invalid indices
+    "Plain16",          // Index 1
+    "Plain32",          // Index 2
+    "KonamiS",          // Index 3
+    "Linear0",          // Index 4
+    "ASCII8",           // Index 5
+    "ASCII16",          // Index 6
+    "Konami"            // Index 7
+};
+
 // Control Variables
 int currentPage;    // Current page
 int totalPages;     // Total pages

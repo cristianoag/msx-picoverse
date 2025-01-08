@@ -379,7 +379,6 @@ void loadrom_32k(uint32_t offset, uint32_t size)
     }
 }
 
-
 // Load a simple 48KB Linear0 ROM into the MSX
 // Those ROMs have three pages of 16Kb each in the following areas:
 // 0x0000-0x3FFF, 0x4000-0x7FFF and 0x8000-0xBFFF
@@ -500,6 +499,218 @@ void loadrom_konamiscc(uint32_t offset, uint32_t size)
     }
 }
 
+// Load a Konami (without SCC) ROM into the MSX
+// The Konami (without SCC) ROM is divided into 8KB segments, managed by a memory mapper that allows dynamic switching of these segments into the MSX's address space
+// Since the size of the mapper is 8Kb, the memory banks are:
+//
+// The memory banks are:
+//  Bank 1: 4000h - 5FFFh
+//	Bank 2: 6000h - 7FFFh
+//	Bank 3: 8000h - 9FFFh
+//	Bank 4: A000h - BFFFh
+//
+// And the address to change banks:
+//
+//	Bank 1: <none>
+//	Bank 2: 6000h - 7FFFh (6000h used)
+//	Bank 3: 8000h - 9FFFh (8000h used)
+//	Bank 4: A000h - BFFFh (A000h used)
+void loadrom_konami(uint32_t offset, uint32_t size)
+{
+    gpio_init(PIN_WAIT); gpio_set_dir(PIN_WAIT, GPIO_OUT);
+    gpio_put(PIN_WAIT, 0); // Wait until we are ready to read the ROM
+    memset(rom_sram, 0, MAX_MEM_SIZE); // Clear the SRAM buffer
+    memcpy(rom_sram, rom + offset, size);  // for 12KB KonamiSCC ROMs we start at 0x0000
+    gpio_put(PIN_WAIT, 1); // Lets go!
+
+    uint8_t bank_registers[4] = {0, 1, 2, 3}; // Initial banks 0-3 mapped
+
+    set_data_bus_input();
+    while (true) 
+    {
+        bool sltsl = (gpio_get(PIN_SLTSL) == 0); // Slot selected (active low)
+        bool rd = (gpio_get(PIN_RD) == 0);       // Read cycle (active low)
+        bool wr = (gpio_get(PIN_WR) == 0);       // Write cycle (active low)
+
+        if (sltsl) {
+            uint16_t addr = read_address_bus();
+
+            if (rd) {
+                // Handle read requests within the ROM address range
+                if (addr >= 0x4000 && addr <= 0xBFFF) {
+                    // Determine the bank index based on the address
+                    uint8_t bank_index = (addr - 0x4000) / 0x2000;
+                    uint16_t bank_offset = addr & 0x1FFF;
+                    uint32_t rom_offset = (bank_registers[bank_index] * 0x2000) + bank_offset;
+
+                    // Set data bus to output mode and write the data
+                    set_data_bus_output();
+                    write_data_bus(rom_sram[rom_offset]);
+
+                    // Wait for the read cycle to complete
+                    while (gpio_get(PIN_RD) == 0) {
+                        tight_loop_contents();
+                    }
+
+                    // Return data bus to input mode after the read cycle
+                    set_data_bus_input();
+                }
+            } else if (wr) {
+                // Handle writes to bank switching addresses
+                if (addr == 0x6000) {
+                    bank_registers[1] = read_data_bus();
+                } else if (addr == 0x8000) {
+                    bank_registers[2] = read_data_bus();
+                } else if (addr == 0xA000) {
+                    bank_registers[3] = read_data_bus();
+                }
+            }
+        }
+    }
+}
+
+// Load an ASCII8 ROM into the MSX
+// The ASCII8 ROM is divided into 8KB segments, managed by a memory mapper that allows dynamic switching of these segments into the MSX's address space
+// Since the size of the mapper is 8Kb, the memory banks are:
+// Bank 1: 4000h - 5FFFh
+// Bank 2: 6000h - 7FFFh
+// Bank 3: 8000h - 9FFFh
+// Bank 4: A000h - BFFFh
+//
+// And the address to change banks:
+// Bank 1: 6000h - 67FFh (6000h used)
+// Bank 2: 6800h - 6FFFh (6800h used)
+// Bank 3: 7000h - 77FFh (7000h used)
+// Bank 4: 7800h - 7FFFh (7800h used)
+void loadrom_ascii8(uint32_t offset, uint32_t size)
+{
+    gpio_init(PIN_WAIT); gpio_set_dir(PIN_WAIT, GPIO_OUT);
+    gpio_put(PIN_WAIT, 0); // Wait until we are ready to read the ROM
+    memset(rom_sram, 0, MAX_MEM_SIZE); // Clear the SRAM buffer
+    memcpy(rom_sram, rom + offset, size);  // for 12KB KonamiSCC ROMs we start at 0x0000
+    gpio_put(PIN_WAIT, 1); // Lets go!
+
+    uint8_t bank_registers[4] = {0, 1, 2, 3}; // Initial banks 0-3 mapped
+
+    set_data_bus_input();
+    while (true) 
+    {
+        bool sltsl = (gpio_get(PIN_SLTSL) == 0); // Slot selected (active low)
+        bool rd = (gpio_get(PIN_RD) == 0);       // Read cycle (active low)
+        bool wr = (gpio_get(PIN_WR) == 0);       // Write cycle (active low)
+
+        if (sltsl) {
+            uint16_t addr = read_address_bus();
+
+            if (rd) {
+                // Handle read requests within the ROM address range
+                if (addr >= 0x4000 && addr <= 0xBFFF) {
+                    // Determine the bank index based on the address
+                    uint8_t bank_index = (addr - 0x4000) / 0x2000;
+                    uint16_t bank_offset = addr & 0x1FFF;
+                    uint32_t rom_offset = (bank_registers[bank_index] * 0x2000) + bank_offset;
+
+                    // Set data bus to output mode and write the data
+                    set_data_bus_output();
+                    write_data_bus(rom_sram[rom_offset]);
+
+                    // Wait for the read cycle to complete
+                    while (gpio_get(PIN_RD) == 0) {
+                        tight_loop_contents();
+                    }
+
+                    // Return data bus to input mode after the read cycle
+                    set_data_bus_input();
+                }
+            } else if (wr) {
+                // Handle writes to bank switching addresses
+                if (addr == 0x6000) {
+                    bank_registers[0] = read_data_bus(); // Read the data bus and store in bank register
+                } else if (addr == 0x6800) {
+                    bank_registers[1] = read_data_bus();
+                } else if (addr == 0x7000) {
+                    bank_registers[2] = read_data_bus();
+                } else if (addr == 0x7800) {
+                    bank_registers[3] = read_data_bus();
+                }
+            }
+        }
+    }
+}
+
+
+// Load an ASCII16 ROM into the MSX
+// The ASCII16 ROM is divided into 16KB segments, managed by a memory mapper that allows dynamic switching of these segments into the MSX's address space
+// Since the size of the mapper is 16Kb, the memory banks are:
+// Bank 1: 4000h - 7FFFh
+// Bank 2: 8000h - BFFFh
+//
+// And the address to change banks:
+// Bank 1: 6000h - 67FFh (6000h used)
+// Bank 2: 7000h - 77FFh (7000h and 77FFh used)
+void loadrom_ascii16(uint32_t offset, uint32_t size)
+{
+    // Initialize the WAIT pin to control the MSX's WAIT signal
+    gpio_init(PIN_WAIT);
+    gpio_set_dir(PIN_WAIT, GPIO_OUT);
+    gpio_put(PIN_WAIT, 0); // Signal the MSX to wait
+    memcpy(rom_sram, rom + offset, size);
+    gpio_put(PIN_WAIT, 1);
+
+    uint8_t bank_registers[2] = {0, 1}; // Initial banks 0 and 1 mapped
+
+    set_data_bus_input();
+    while (true) {
+        // Check control signals
+        bool sltsl = (gpio_get(PIN_SLTSL) == 0); // Slot selected (active low)
+        bool rd = (gpio_get(PIN_RD) == 0);       // Read cycle (active low)
+        bool wr = (gpio_get(PIN_WR) == 0);       // Write cycle (active low)
+
+        if (sltsl) {
+            uint16_t addr = read_address_bus();
+
+            if (rd) {
+                // Handle read requests within the ROM address range
+                if (addr >= 0x4000 && addr <= 0xBFFF) {
+                    // Determine the bank index based on the address
+                    uint8_t bank_index = (addr >= 0x8000) ? 1 : 0;
+                    uint16_t bank_offset = addr & 0x3FFF;
+                    uint32_t rom_offset = (bank_registers[bank_index] * 0x4000) + bank_offset;
+
+                    // Set data bus to output mode and write the data
+                    set_data_bus_output();
+                    write_data_bus(rom_sram[rom_offset]);
+
+                    // Wait for the read cycle to complete
+                    while (gpio_get(PIN_RD) == 0) {
+                        tight_loop_contents();
+                    }
+
+                    // Return data bus to input mode after the read cycle
+                    set_data_bus_input();
+                }
+            } else if (wr) {
+                // Handle write operations for bank switching
+                uint8_t data = read_data_bus();
+
+                // Update bank registers based on the specific switching addresses
+                switch (addr) {
+                    case 0x6000:
+                        bank_registers[0] = data;
+                        break;
+                    case 0x7000:
+                    case 0x77FF:
+                        bank_registers[1] = data;
+                        break;
+                    default:
+                        // Address does not correspond to bank switching
+                        break;
+                }
+            }
+        }
+    }
+}
+
 // Main function running on core 1
 void core1_entry() {
     // Task for core 1
@@ -527,16 +738,33 @@ int main()
     printf("Debug: Size: %d\n", records[rom_index].Size);
     printf("Debug: Offset: %d\n", records[rom_index].Offset);
 
+    // Load the selected ROM into the MSX
+    // 1 - 16KB ROM
+    // 2 - 32KB ROM
+    // 3 - Konami SCC ROM
+    // 4 - 48KB Linear0 ROM
+    // 5 - ASCII8 ROM
+    // 6 - ASCII16 ROM
+    // 7 - Konami (without SCC) ROM
     switch (records[rom_index].Mapper) {
         case 1:
         case 2:
-            loadrom_32k(records[rom_index].Offset, records[rom_index].Size); // load the selected ROM into the MSX
+            loadrom_32k(records[rom_index].Offset, records[rom_index].Size); 
             break;
         case 3:
-            loadrom_konamiscc(records[rom_index].Offset, records[rom_index].Size); // load the selected ROM into the MSX
+            loadrom_konamiscc(records[rom_index].Offset, records[rom_index].Size); 
             break;
         case 4:
-            loadrom_48k_Linear0(records[rom_index].Offset, records[rom_index].Size); // load the selected ROM into the MSX
+            loadrom_48k_Linear0(records[rom_index].Offset, records[rom_index].Size); 
+            break;
+        case 5:
+            loadrom_ascii8(records[rom_index].Offset, records[rom_index].Size); 
+            break;
+        case 6:
+            loadrom_ascii16(records[rom_index].Offset, records[rom_index].Size); 
+            break;
+        case 7:
+            loadrom_konami(records[rom_index].Offset, records[rom_index].Size); 
             break;
         default:
             printf("Debug: Unsupported ROM mapper: %d\n", records[rom_index].Mapper);

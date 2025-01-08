@@ -33,6 +33,9 @@ This is a program to load a single ROM image (up to 128KB at this moment) from t
 * Plain32 ROMs (32 KB)
 * Linear0 ROMs (48 KB)
 * Konami SCC ROMs (up to 128 KB)
+* Konami (without SCC) ROMs (up to 128 KB)
+* ASCII8 ROMs (up to 128 KB)
+* ASCII16 ROMs (up to 128 KB)
 
 To use you need to run loadrom.exe passing the ROM file as a parameter. The tool will read the ROM file, detect its type and create a UF2 file that can be used to program the PICO board. 
 ```
@@ -50,6 +53,9 @@ At this moment the tool can load and execute following ROM types:
 * Plain32 ROMs (32 KB)
 * Linear0 ROMs (48 KB)
 * Konami SCC ROMs (up to 128 KB)
+* Konami (without SCC) ROMs (up to 128 KB)
+* ASCII8 ROMs (up to 128 KB)
+* ASCII16 ROMs (up to 128 KB)
 
 To use it you need to run the multirom.exe tool in the same folder as the ROM files. Please rename the ROM files with names with up to 20 characters in the way you want them to appear in the menu. The tool will read the ROM files, detect their type and create a UF2 file that can be used to program the PICO board. 
 
