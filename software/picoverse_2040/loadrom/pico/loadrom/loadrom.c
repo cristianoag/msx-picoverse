@@ -203,6 +203,78 @@ void dump_rom_sram(uint32_t size)
     }
 }
 
+/// ---- TESTS WITH CACHE AND LOADING DIRECTLY FROM FLASH ---- ///
+#define CACHE_SIZE 1024
+
+static uint8_t cache[CACHE_SIZE];
+static uint32_t cache_start_addr = 0;
+static bool cache_valid = false;
+
+void load_cache(uint32_t flash_addr) {
+    cache_start_addr = flash_addr & ~(CACHE_SIZE - 1); // Align to CACHE_SIZE boundary
+    memcpy(cache, rom + cache_start_addr, CACHE_SIZE);
+    cache_valid = true;
+}
+
+void loadrom_plain32_flash_cache(uint32_t offset, uint32_t size) {
+    set_data_bus_input();
+    while (true) {
+        bool sltsl = (gpio_get(PIN_SLTSL) == 0); // Slot select (active low)
+        bool rd = (gpio_get(PIN_RD) == 0);       // Read cycle (active low)
+
+        if (sltsl) {
+            uint16_t addr = read_address_bus();
+            if (addr >= 0x4000 && addr <= 0xBFFF) { // Check if the address is within the ROM range
+                uint32_t rom_addr = offset + (addr - 0x4000); // Calculate flash address
+
+                if (!cache_valid || rom_addr < cache_start_addr || rom_addr >= cache_start_addr + CACHE_SIZE) {
+                    load_cache(rom_addr);
+                }
+
+                if (rd) {
+                    set_data_bus_output(); // Drive data bus to output mode
+                    write_data_bus(cache[rom_addr - cache_start_addr]); // Read from cache
+                    while (gpio_get(PIN_RD) == 0) { // Wait until the read cycle completes (RD goes high)
+                        tight_loop_contents();
+                    }
+                    set_data_bus_input(); // Return data lines to input mode after cycle completes
+                }
+            }
+        }
+    }
+}
+
+void __no_inline_not_in_flash_func(loadrom_plain32_flash)(uint32_t offset, uint32_t size)
+{
+    // Set data bus to input mode
+    set_data_bus_input();
+    while (true) 
+    {
+        bool sltsl = (gpio_get(PIN_SLTSL) == 0); // Slot select (active low)
+        bool rd = (gpio_get(PIN_RD) == 0);       // Read cycle (active low)
+
+        if (sltsl) 
+        {
+            uint16_t addr = read_address_bus();
+            if (addr >= 0x4000 && addr <= 0xBFFF) // Check if the address is within the ROM range
+            {
+                uint32_t rom_addr = offset + (addr - 0x4000); // Calculate flash address
+                if (rd)
+                {
+                    set_data_bus_output(); // Drive data bus to output mode
+                    write_data_bus(rom[rom_addr]);  // Drive data onto the bus
+                    while (gpio_get(PIN_RD) == 0)  // Wait until the read cycle completes (RD goes high)
+                    {
+                        tight_loop_contents();
+                    }
+                    set_data_bus_input(); // Return data lines to input mode after cycle completes
+                }
+            } 
+        } 
+    }
+}
+
+
 // Load a simple 32KB ROM into the MSX
 // They have two pages of 16Kb each in the following areas:
 // 0x4000-0x7FFF and 0x8000-0xBFFF
@@ -574,7 +646,7 @@ void loadrom_ascii16(uint32_t offset, uint32_t size)
 int main()
 {
     // Set system clock to 240MHz
-    set_sys_clock_khz(240000, true);
+    set_sys_clock_khz(270000, true);
     // Initialize stdio
     stdio_init_all();
     // Initialize GPIO
@@ -604,7 +676,8 @@ int main()
     {
         case 1:
         case 2:
-            loadrom_plain32(0x1d, rom_size);
+            //loadrom_plain32(0x1d, rom_size);
+            loadrom_plain32_flash(0x1d, rom_size);
             break;
         case 3:
             loadrom_konamiscc(0x1d, rom_size);

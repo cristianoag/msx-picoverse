@@ -51,8 +51,9 @@ pico_sdk_init()
 
 add_executable(loadrom loadrom.c )
 
-# Embed the binary file "my_rom.bin" into the final binary
-# pico_embed_binary(loadrom KMARE kmare.rom)
+# Set PICO_FLASH_SPI_CLKDIV 
+#target_compile_definitions(loadrom PRIVATE PICO_FLASH_SPI_CLKDIV=2)
+#add_compile_definitions(PICO_FLASH_SPI_CLKDIV=2)
 
 pico_set_program_name(loadrom "loadrom")
 pico_set_program_version(loadrom "1.0")
