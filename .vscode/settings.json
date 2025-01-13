@@ -5,6 +5,8 @@
         "bios.h": "c",
         "stdio.h": "c",
         "dirent.h": "c",
-        "uf2format.h": "c"
+        "uf2format.h": "c",
+        "text_encoding": "c",
+        "cstddef": "c"
     }
 }

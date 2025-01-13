@@ -38,12 +38,13 @@ int currentPage;    // Current page
 int totalPages;     // Total pages
 int currentIndex;   // Current file index
 unsigned char totalFiles;     // Total files
+unsigned long totalSize;
 ROMRecord records[MAX_ROM_RECORDS]; // Array to store the ROM records
 
 // Declare the functions
 unsigned long read_ulong(const unsigned char *ptr);
 int isEndOfData(const unsigned char *memory);
-void readROMData(ROMRecord *records, unsigned char *recordCount);
+void readROMData(ROMRecord *records, unsigned char *recordCount, unsigned long *sizeTotal);
 int putchar (int character);
 void invert_chars(unsigned char startChar, unsigned char endChar);
 void print_str_normal(const char *str);

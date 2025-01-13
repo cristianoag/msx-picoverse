@@ -51,16 +51,12 @@ pico_sdk_init()
 
 add_executable(loadrom loadrom.c )
 
-# Set PICO_FLASH_SPI_CLKDIV 
-#target_compile_definitions(loadrom PRIVATE PICO_FLASH_SPI_CLKDIV=2)
-#add_compile_definitions(PICO_FLASH_SPI_CLKDIV=2)
-
 pico_set_program_name(loadrom "loadrom")
 pico_set_program_version(loadrom "1.0")
 
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(loadrom 0)
-pico_enable_stdio_usb(loadrom 1)
+pico_enable_stdio_usb(loadrom 0)
 
 # Add the standard library to the build
 target_link_libraries(loadrom
@@ -71,11 +67,14 @@ target_include_directories(loadrom PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}
 )
 
+# Set PICO_FLASH_SPI_CLKDIV
+#pico_define_boot_stage2(loadrom_boot2  ${PICO_SDK_PATH}/src/rp2040/boot_stage2/compile_time_choice.S)
+#target_compile_definitions(loadrom_boot2  PRIVATE PICO_FLASH_SPI_CLKDIV=2)
+#pico_set_boot_stage2(loadrom loadrom_boot2)
+
 pico_add_extra_outputs(loadrom)
 
 # Custom command to copy files to dist folder
 add_custom_command(TARGET loadrom POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/loadrom.bin ${CMAKE_SOURCE_DIR}/dist/loadrom.bin
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/uf2conv.exe ${CMAKE_SOURCE_DIR}/dist/uf2conv.exe
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/build.bat ${CMAKE_SOURCE_DIR}/dist/build.bat
 )

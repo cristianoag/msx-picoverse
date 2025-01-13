@@ -50,11 +50,13 @@ int isEndOfData(const unsigned char *memory) {
 // Parameters:
 //   records - Pointer to the array of ROM records to store the data
 //   recordCount - Pointer to the variable to store the number of records read
-void readROMData(ROMRecord *records, unsigned char *recordCount) {
+void readROMData(ROMRecord *records, unsigned char *recordCount, unsigned long *sizeTotal) {
     unsigned char *memory = (unsigned char *)MEMORY_START;
     unsigned char count;
+    unsigned long total;
 
     count = 0;
+    total = 0;
     while (count < MAX_ROM_RECORDS && !isEndOfData(memory)) {
         // Copy Name
         MemCopy(records[count].Name, memory, 20);
@@ -63,10 +65,12 @@ void readROMData(ROMRecord *records, unsigned char *recordCount) {
         records[count].Size = read_ulong(&memory[21]); // Read Size (4 bytes)
         records[count].Offset = read_ulong(&memory[25]); // Read Offset (4 bytes)
         memory += ROM_RECORD_SIZE; // Move to the next record
+        total += records[count].Size;
         count++;
     }
 
     *recordCount = count;
+    *sizeTotal = total;
 }
 
 // putchar - Print a character on the screen
@@ -81,12 +85,12 @@ int putchar (int character)
     __asm
     ld      hl, #2              ;Get the return address of the function
     add     hl, sp              ;Bypass the return address of the function 
-    ld     a, (hl)              ;Get the character to print
+    ld      a, (hl)              ;Get the character to print
 
-    ld     iy,(#BIOS_EXPTBL-1)  ;BIOS slot in iyh
-    push ix                     ;save ix
-    ld     ix,#BIOS_CHPUT       ;address of BIOS routine
-    call   BIOS_CALSLT          ;interslot call
+    ld      iy,(#BIOS_EXPTBL-1)  ;BIOS slot in iyh
+    push    ix                     ;save ix
+    ld      ix,#BIOS_CHPUT       ;address of BIOS routine
+    call    BIOS_CALSLT          ;interslot call
     pop ix                      ;restore ix
     __endasm;
 
@@ -96,6 +100,34 @@ int putchar (int character)
 void execute_rst00() {
     __asm
         rst 0x00
+    __endasm;
+}
+
+void clear_screen_0() {
+    __asm
+    ld      a, #0            ; Set SCREEN 0 mode
+    call    BIOS_CHGMOD    ; Call BIOS CHGMOD to change screen mode to SCREEN 0
+    call    BIOS_CLS       ; Call BIOS CLS function to clear the screen
+    __endasm;
+}
+
+void clear_fkeys()
+{
+    __asm
+    ld hl, #BIOS_FNKSTR    ; Load the starting address of function key strings into HL
+    ld de, #0xF880    ; Load the next address into DE for block fill
+    ld bc, #160       ; Set BC to 160, the number of bytes to clear
+    ld (hl), #0       ; Initialize the first byte to 0
+
+clear_loop:
+    ldi              ; Load (HL) with (DE), increment HL and DE, decrement BC
+    dec hl           ; Adjust HL back to the correct position
+    ld (hl), #0       ; Set the current byte to 0
+    inc hl           ; Move to the next byte
+    dec bc           ; Decrement the byte counter
+    ld a, b          ; Check if BC has reached zero
+    or c
+    jp nz, clear_loop ; Repeat until all bytes are cleared
     __endasm;
 }
 
@@ -165,30 +197,29 @@ char* mapper_description(int number) {
 // displayMenu - Display the menu on the screen
 // This function will display the menu on the screen. It will print the header, the files on the current page and the footer with the page number and options.
 void displayMenu() {
-    
-    //Screen(0);
-    //invert_chars(32, 126); // Invert the characters from 32 to 126
-    Cls(); // Clear the screen
+    //Cls(); // for some reason is not working here
+    //clear_screen_0(); // works but reset the char table
+    Screen(0);
+    invert_chars(32, 126); // Invert the characters from 32 to 126
+    //FunctionKeys(1); // Disable the function keys
+
+
     Locate(0, 0);
     printf("MSX PICOVERSE 2040     [MultiROM v1.0]");
     Locate(0, 1);
     printf("--------------------------------------");
-    unsigned char xi = currentIndex%(FILES_PER_PAGE-1); // Calculate the index of the file to start displaying
-    for (int i = 0; (i < FILES_PER_PAGE) && (xi<totalFiles-1) ; i++)  // Loop through the files
+    unsigned char xi = currentIndex%(FILES_PER_PAGE); // Calculate the index of the file to start displaying
+    for (int i = 0; (i < FILES_PER_PAGE) && (xi<totalFiles-1) && (i<totalFiles); i++)  // Loop through the files
     {   
-        //Locate(0, 2 + i); // Position on the screen, starting at line 2
-        //printf(" ");
         Locate(0, 2 + i); // Position on the screen, starting at line 2
         xi = i+((currentPage-1)*FILES_PER_PAGE); // Calculate the index of the file to display
-        //printf(" %-22s %4luKB %-8s",records[xi].Name, records[xi].Size/1024, rom_types[records[xi].Mapper]);  // Print each file name, size and mapper
-        printf(" %-22s %4lukb %-8s",records[xi].Name, records[xi].Size/1024, mapper_description(records[xi].Mapper));  // Print each file name, size and mapper
-
+        printf(" %-24s %04lu %-8s",records[xi].Name, records[xi].Size/1024, mapper_description(records[xi].Mapper));  // Print each file name, size and mapper
     }
     // footer
     Locate(0, 21);
     printf("--------------------------------------");
     Locate(0, 22);
-    printf("Page %02d/%02d     [H - Help] [C - Config]",currentPage, totalPages); // Print the page number and the help and config options
+    printf("Page: %02d/%02d    [H - Help] [C - Config]",currentPage, totalPages); // Print the page number and the help and config options
     Locate(0, (currentIndex%FILES_PER_PAGE) + 2); // Position the cursor on the selected file
     printf(">"); // Print the cursor
     print_str_inverted(records[currentIndex%FILES_PER_PAGE].Name); // Print the selected file name inverted
@@ -230,8 +261,6 @@ void charMap() {
 // This function will display the configuration menu on the screen. 
 void configMenu()
 {
-    
-
     Cls(); // Clear the screen
     Locate(0,0);
     printf("MSX PICOVERSE 2040     [MultiROM v1.0]");
@@ -239,7 +268,6 @@ void configMenu()
     printf("---------------------------------------");
     Locate(0, 2);
 
-   
     
 
     Locate(0, 21);
@@ -266,16 +294,13 @@ void helpMenu()
     Locate(0, 3);
     printf("Use [LEFT] [RIGHT] to navigate  pages.");
     Locate(0, 4);
-    printf("Press [H] to display the help screen.");
+    printf("Press [ENTER] or [SPACE] to load the ");
     Locate(0, 5);
-    printf("Press [C] to display the config page.");
+    printf("  selected game.");
+    Locate(0, 6);
+    printf("Press [H] to display the help screen.");
     Locate(0, 7);
-    printf("32="); PrintChar(32); 
-    Locate(0, 8);
-    printf("128=");PrintChar(128); 
-    Locate(0, 10);
-    //charMap();
-
+    printf("Press [C] to display the config page.");
     Locate(0, 21);
     printf("--------------------------------------");
     Locate(0, 22);
@@ -309,13 +334,18 @@ void navigateMenu()
     {
         //debug
         Locate(0, 23);
-        printf("Key: %3d", key);
+        //printf("Key: %3d", key);
+        printf("Size: %05lu/15872", totalSize/1024);
         //debug
-        Locate(18, 23);
-        printf("CPage: %2d Index: %2d", currentPage, currentIndex);
+        Locate(27, 23);
+        printf("Mapper: Off");
+        //printf("CPage: %2d Index: %2d", currentPage, currentIndex);
         Locate(0, (currentIndex%FILES_PER_PAGE) + 2);
-        //key = WaitKey();
-        key = InputChar();
+        key = WaitKey();
+        //key = KeyboardRead();
+        //key = InputChar();
+        char fkey = Fkeys();
+
         Locate(0, (currentIndex%FILES_PER_PAGE) + 2); // Position the cursor on the selected file
         printf(" "); // Clear the cursor
         printf(records[currentIndex].Name); // Print the file name
@@ -367,6 +397,7 @@ void navigateMenu()
                 configMenu(); // Display the config menu
                 break;
             case 13: // Enter
+            case 32: // Space
                 // Load the game
                 loadGame(currentIndex); // Load the selected game
                 break;
@@ -383,11 +414,13 @@ void main() {
     currentPage = 1; // Start on page 1
     currentIndex = 0; // Start at the first file - index 0
     
-    readROMData(records, &totalFiles);
+    readROMData(records, &totalFiles, &totalSize);
     totalPages = (int)((totalFiles/FILES_PER_PAGE)+1); // Calculate the total pages based on the total files and files per page
 
-    Screen(0); // Set the screen mode
-    invert_chars(32, 126); // Invert the characters from 32 to 126
+    //Screen(0); // Set the screen mode
+    //invert_chars(32, 126); // Invert the characters from 32 to 126
+    clear_fkeys(); // Clear the function keys
+    //KillKeyBuffer(); // Clear the key buffer
 
     // Display the menu
     displayMenu();

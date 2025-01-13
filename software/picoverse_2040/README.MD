@@ -27,35 +27,39 @@ uf2conv.exe testflash1-rom.bin testflash1-rom.uf2
 
 ### [loadrom](loadrom/dist/)
 
-This is a program to load a single ROM image (up to 128KB at this moment) from the flash memory of the PICO board. The ROM image is read from the flash memory and copied to the RAM of the PICO board. The ROM image is then executed. At this moment the tool can load and execute following ROM types:
+This is a program to load a single ROM image (up to 2MB) from the flash memory of the PICO board. The ROM image is read from the flash memory and copied to the RAM of the PICO board. The ROM image is then executed. At this moment the tool can load and execute ROMs of the following types:
 
-* Plain16 ROMs (16 KB)
-* Plain32 ROMs (32 KB)
-* Linear0 ROMs (48 KB)
-* Konami SCC ROMs (up to 128 KB)
-* Konami (without SCC) ROMs (up to 128 KB)
-* ASCII8 ROMs (up to 128 KB)
-* ASCII16 ROMs (up to 128 KB)
+* Plain16  
+* Plain32  
+* Linear0  
+* Konami SCC  
+* Konami (without SCC)  
+* ASCII8  
+* ASCII16  
 
-To use you need to run loadrom.exe passing the ROM file as a parameter. The tool will read the ROM file, detect its type and create a UF2 file that can be used to program the PICO board. 
+To use you need to run loadrom.exe passing the ROM file as a parameter. The tool will read the ROM file, attempt to detect the mapper used, and then create a UF2 file that can be used to program the PICO board. 
 ```
 loadrom.exe romfile.rom
 ```
-Then connect your cartridge to the PC via the USB-C cable and copy the loadrom.uf2 file to the PICO board. The ROM will be loaded and executed on the MSX when the cartridge is inserted to the slot.
+After the tool execution, you need to connect your cartridge to the PC via the USB-C cable with the BOOTSEL button pushed, and copy the loadrom.uf2 file to drive that will be created in your operating system. The ROM will be loaded and executed on the MSX when the cartridge is inserted to the slot.
 
 ### [multirom](multirom/)
 
 This is an alternative firmware that allows the selection of a ROM image from a list of ROMs stored in the flash memory of the PICO board. The ROM image is read from the flash memory and copied to the RAM of the PICO board. The ROM image is then executed on the MSX. 
 
+|Menu - Page1|Menu - Page2|
+|---|---|
+|![alt text](../../images/Multirom1.png)|![alt text](../../images/Multirom2.png)|
+
 At this moment the tool can load and execute following ROM types:
 
-* Plain16 ROMs (16 KB)
-* Plain32 ROMs (32 KB)
-* Linear0 ROMs (48 KB)
-* Konami SCC ROMs (up to 128 KB)
-* Konami (without SCC) ROMs (up to 128 KB)
-* ASCII8 ROMs (up to 128 KB)
-* ASCII16 ROMs (up to 128 KB)
+* Plain16  
+* Plain32  
+* Linear0  
+* Konami SCC  
+* Konami (without SCC)  
+* ASCII8  
+* ASCII16  
 
 To use it you need to run the multirom.exe tool in the same folder as the ROM files. Please rename the ROM files with names with up to 20 characters in the way you want them to appear in the menu. The tool will read the ROM files, detect their type and create a UF2 file that can be used to program the PICO board. 
 
