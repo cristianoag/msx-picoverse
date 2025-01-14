@@ -225,38 +225,6 @@ void displayMenu() {
     print_str_inverted(records[currentIndex%FILES_PER_PAGE].Name); // Print the selected file name inverted
 }
 
-// *** DEBUG FUNCTION - REMOVE LATER ***
-// charMap - Display the character map on the screen
-// This function will display the character map on the screen. It will print all the characters from the MSX character table.
-// Used only for debug, we can remove it later
-// *** DEBUG FUNCTION - REMOVE LATER ***
-void charMap() {
-    int row;
-    int col;
-    row = 11;
-    col = 0;
-    // Loop through all 256 characters in the MSX character table
-    for (int i = 0; i < 256; i++) 
-    {
-        // Set the cursor position
-        Locate(col, row);
-        // Print the character
-        if (i < 32) {
-            PrintChar('#');
-        } else {
-            PrintChar(i);
-        }
-        // Move to the next column
-        col++;
-        // If we reach the end of the line, go to the next row
-        if (col >= 40) {
-            col = 0;
-            row++;
-        }
-    }
-    
-}
-
 // configMenu - Display the configuration menu on the screen
 // This function will display the configuration menu on the screen. 
 void configMenu()
