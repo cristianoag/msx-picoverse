@@ -46,7 +46,7 @@ The RP2350, introduced in August 2024 by Raspberry Pi Ltd., is a high-performanc
 PicoVerse 2350 cartridges are based on development boards that expose 48 GPIO pins and are **NOT compatible** with conventional Raspberry Pi Pico 2 development boards, which typically expose only 26 GPIO pins. Currently, the following boards are supported:
 
 * [Pimoroni PGA2350](https://shop.pimoroni.com/products/pga2350?variant=42092629229651)
-* [Olimex Pico2 XL]((https://www.olimex.com/Products/RaspberryPi/PICO/PICO2-XXL/))
+* [Olimex Pico2 XL](https://www.olimex.com/Products/RaspberryPi/PICO/PICO2-XXL/)
 * [Olimex Pico2 XXL](https://www.olimex.com/Products/RaspberryPi/PICO/PICO2-XXL/)
 
 ## Software
