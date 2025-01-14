@@ -126,8 +126,16 @@ uint8_t detect_rom_type(const char *filename, uint32_t size) {
         return 1;     // Plain 16KB 
     }
     if (rom[0] == 'A' && rom[1] == 'B' && size == 32768) {
+
+        //check if it is a normal 32KB ROM or linear0 32KB ROM
+        if (rom[0x4000] == 'A' && rom[0x4001] == 'B') {
+            free(rom);
+            return 4; // Linear0 32KB
+        }
+        
         free(rom);
         return 2;     // Plain 32KB 
+
     }
     // Check if the ROM has the signature "AB" at 0x4000 and 0x4001
     // That is the case for 48KB ROMs with Linear page 0 config

@@ -139,8 +139,16 @@ uint8_t detect_rom_type(const char *filename, uint32_t size) {
         return 1;     // Plain 16KB 
     }
     if (rom[0] == 'A' && rom[1] == 'B' && size == 32768) {
+
+        //check if it is a normal 32KB ROM or linear0 32KB ROM
+        if (rom[0x4000] == 'A' && rom[0x4001] == 'B') {
+            free(rom);
+            return 4; // Linear0 32KB
+        }
+        
         free(rom);
         return 2;     // Plain 32KB 
+
     }
     // Check if the ROM has the signature "AB" at 0x4000 and 0x4001
     // That is the case for 48KB ROMs with Linear page 0 config
@@ -402,11 +410,11 @@ int main()
 
     //debug
     // create a MSX ROM file to debug on OpenMSX
-    FILE *msx_rom = fopen("multirom.rom", "wb");
-    if (!msx_rom) {
-        perror("Failed to create MSX ROM file");
-        return 1;
-    }
+    //FILE *msx_rom = fopen("multirom.rom", "wb");
+    //if (!msx_rom) {
+    //   perror("Failed to create MSX ROM file");
+    //    return 1;
+    //}
     // Copy only 16KB (16 * 1024 bytes) of the MENU_FILE
     size_t bytes_to_copy = 16 * 1024;
     while (bytes_to_copy > 0 && (bytes_read = fread(buffer, 1, sizeof(buffer), output_file)) > 0) {
@@ -414,7 +422,7 @@ int main()
             bytes_read = bytes_to_copy;
         }
         fwrite(buffer, 1, bytes_read, final_output_file);
-        fwrite(buffer, 1, bytes_read, msx_rom); //debug
+        //fwrite(buffer, 1, bytes_read, msx_rom); //debug
         total_bytes_written += bytes_read;
         bytes_to_copy -= bytes_read;
     }
@@ -430,15 +438,15 @@ int main()
     // Copy the CONFIG_FILE to the final output file
     while ((bytes_read = fread(buffer, 1, sizeof(buffer), output_file)) > 0) {
         fwrite(buffer, 1, bytes_read, final_output_file);
-       fwrite(buffer, 1, bytes_read, msx_rom); //debug
+       //fwrite(buffer, 1, bytes_read, msx_rom); //debug
         total_bytes_written += bytes_read;
     }
     fclose(output_file);
 
     // Pad the remaining space to reach 32KB
     write_padding(final_output_file, total_bytes_written, TARGET_FILE_SIZE, 0xFF);
-    write_padding(msx_rom, total_bytes_written, TARGET_FILE_SIZE, 0xFF); //debug
-    fclose(msx_rom); //debug
+    //write_padding(msx_rom, total_bytes_written, TARGET_FILE_SIZE, 0xFF); //debug
+    //fclose(msx_rom); //debug
 
     //printf("About to append the ROM files to the final output file...\n");
     //printf("File count = %d\n", file_count);
