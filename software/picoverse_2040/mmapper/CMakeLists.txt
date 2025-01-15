@@ -28,29 +28,30 @@ set(PICO_BOARD pico CACHE STRING "Board type")
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 
-project(multirom C CXX ASM)
+project(mmapper C CXX ASM)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(multirom mapper.c multirom.c)
+add_executable(mmapper mmapper.c )
 
-pico_set_program_name(multirom "multirom")
-pico_set_program_version(multirom "0.1")
+pico_set_program_name(mmapper "mmapper")
+pico_set_program_version(mmapper "0.1")
 
 # Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(multirom 0)
-pico_enable_stdio_usb(multirom 1)
+pico_enable_stdio_uart(mmapper 0)
+pico_enable_stdio_usb(mmapper 1)
 
 # Add the standard library to the build
-target_link_libraries(multirom pico_stdlib pico_multicore)
+target_link_libraries(mmapper
+        pico_stdlib)
 
 # Add the standard include files to the build
-target_include_directories(multirom PRIVATE
+target_include_directories(mmapper PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}
 )
 
-pico_add_extra_outputs(multirom)
+pico_add_extra_outputs(mmapper)
 

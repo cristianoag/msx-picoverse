@@ -17,7 +17,8 @@
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
 #include "hardware/clocks.h"
-#include "pins.h"
+#include "multirom.h"
+#include "mapper.h"
 
 // config area and buffer for the ROM data
 #define ROM_START    0x8000;    // ROM data starts at __flash_binary_end + 32768 (MENU)  = __flash_binary_end + 0x8000h
@@ -26,9 +27,6 @@
 #define ROM_RECORD_SIZE 29      // Size of the ROM record in the configuration area in bytes
 #define MAX_ROM_RECORDS 256     // Maximum ROM files supported 2^8=256
 #define ROM_NAME_MAX 20         // Maximum size of the ROM name
-
-
-
 
 // This symbol marks the end of the main program in flash.
 // Custom data starts right after it
@@ -490,13 +488,7 @@ int main()
     // Start core 1 tasks
     // multicore_launch_core1(core1_entry);
 
-    printf("Debug: Loading the MSX Menu ROM\n");
     int rom_index = loadrom_msx_menu(0x0000, 32768); //load the first 32KB ROM into the MSX (The MSX PICOVERSE MENU)
-    printf("Debug: ROM index selected: %d\n", rom_index);
-    printf("Debug: Loading the selected ROM: %s\n", records[rom_index].Name);
-    printf("Debug: Mapper: %d\n", records[rom_index].Mapper);
-    printf("Debug: Size: %d\n", records[rom_index].Size);
-    printf("Debug: Offset: %d\n", records[rom_index].Offset);
 
     // Load the selected ROM into the MSX according to the mapper
     switch (records[rom_index].Mapper) {
@@ -524,6 +516,4 @@ int main()
             break;
     }
     
-    printf("Debug: MSX Menu ROM loaded\n");
-
 }

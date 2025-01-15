@@ -68,6 +68,10 @@ multirom.exe
 ```
 Then connect your cartridge to the PC via the USB-C cable and copy the multirom.uf2 file to the PICO board. The menu will be executed and you can select the ROM to be loaded to the MSX.
 
+### [mmapper](mmapper/)
+
+The mmapper firmwate implements a 128KB memory mapper on the MSX computer. You just need to compile the code and copy the UF2 file to the PICO board. The firmware will be loaded and the memory mapper will be available to the MSX computer.
+
 ### [flashrom](flashrom/)
 
 The Flashrom firmware allows loading ROMs from the Raspberry Pi Pico's flash memory. When you flash the cartridge with this firmware, a new drive will be created/appear on your PC when you connect the cartridge/pico to it via USB cable. The drive has the name PICOVERSE.

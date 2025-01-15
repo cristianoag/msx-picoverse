@@ -1,3 +1,16 @@
+// MSX PICOVERSE PROJECT
+// (c) 2024 Cristiano Goncalves
+// The Retro Hacker
+//
+// loadrom.h - Simple ROM loader for MSX PICOVERSE project - v1.0
+//
+// This is  small test program that demonstrates how to load simple ROM images using the MSX PICOVERSE project. 
+// You need to concatenate the ROM image to the  end of this program binary in order  to load it.
+// The program will then act as a simple ROM cartridge that responds to memory read requests from the MSX.
+// 
+// This work is licensed  under a "Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+// License". https://creativecommons.org/licenses/by-nc-sa/4.0/
+
 #ifndef LOADROM_H
 #define LOADROM_H
 

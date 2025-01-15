@@ -1,0 +1,1 @@
+void __no_inline_not_in_flash_func(core1_entry)(void);
