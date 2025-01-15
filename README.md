@@ -22,7 +22,7 @@ The available versions for the cartridge are divided into two categories:
 |---------|---------|
 | ![Image 2](images/2024-12-30_20-07.png) | ![Image 2](images/2025-01-01_09-20.png) |
 
-The RP2040 is a dual-core ARM Cortex-M0+ microcontroller operating at up to 133 MHz, featuring 264 KB of SRAM and support for external flash memory. It offers a variety of interfaces, including GPIO pins, SPI, I²C, UART, ADCs, PWM channels, and USB support.
+The RP2040 is a dual-core ARM Cortex-M0+ microcontroller operating initially at 133 MHz, featuring 264 KB of SRAM and support for external flash memory. It offers a variety of interfaces, including GPIO pins, SPI, I²C, UART, ADCs, PWM channels, and USB support.
 
 PicoVerse 2040 cartridges are designed for development boards that expose 30 GPIO pins and are **NOT compatible** with standard Raspberry Pi Pico boards. The table below shows the available designs and compatible boards:
 
