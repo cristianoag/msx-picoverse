@@ -27,7 +27,7 @@ uf2conv.exe testflash1-rom.bin testflash1-rom.uf2
 
 ### [loadrom](loadrom/dist/)
 
-This is a program to load a single ROM image (up to 2MB) from the flash memory of the PICO board. The ROM image is read from the flash memory and copied to the RAM of the PICO board. The ROM image is then executed. At this moment the tool can load and execute ROMs of the following types:
+This is a program to load a single ROM image (up to 2MB) from the flash memory of the PICO board. The ROM image is read directly from the flash memory and then executed. At this moment the tool can load and execute ROMs of the following types:
 
 * Plain16  
 * Plain32  
