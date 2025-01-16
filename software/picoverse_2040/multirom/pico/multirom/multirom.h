@@ -1,7 +1,17 @@
-// -----------------------
-// User-defined pin assignments
-// -----------------------
-// Address lines (A0-A15) as inputs from MSX
+// MSX PICOVERSE PROJECT
+// (c) 2024 Cristiano Goncalves
+// The Retro Hacker
+//
+// multirom.c - This is the Raspberry Pico firmware that will be used to load ROMs into the MSX
+//
+// This firmware is responsible for loading the multirom menu and the ROMs selected by the user into the MSX. When flashed through the 
+// multirom tool, it will be stored on the pico flash memory followed by the MSX MENU ROM (with the config) and all the ROMs processed by the 
+// multirom tool. The sofware in this firmware will load the first 32KB ROM that contains the menu into the MSX and it will allow the user
+// to select a ROM to be loaded into the MSX. The selected ROM will be loaded into the MSX and the MSX will be reseted to run the selected ROM.
+//
+// This work is licensed  under a "Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+// License". https://creativecommons.org/licenses/by-nc-sa/4.0/
+
 #define PIN_A0     0 
 #define PIN_A1     1
 #define PIN_A2     2

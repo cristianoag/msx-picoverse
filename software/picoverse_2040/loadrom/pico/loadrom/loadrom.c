@@ -327,11 +327,8 @@ void loadrom_linear48_sram(uint32_t offset, uint32_t size)
 // loadrom_konamiscc - Load a any Konami SCC ROM into the MSX directly from the pico flash
 // The KonamiSCC ROMs are divided into 8KB segments, managed by a memory mapper that allows dynamic switching of these segments 
 // into the MSX's address space. Since the size of the mapper is 8Kb, the memory banks are:
-//
 // Bank 1: 4000h - 5FFFh , Bank 2: 6000h - 7FFFh, Bank 3: 8000h - 9FFFh, Bank 4: A000h - BFFFh
-//
 // And the address to change banks are:
-//
 // Bank 1: 5000h - 57FFh (5000h used), Bank 2: 7000h - 77FFh (7000h used), Bank 3: 9000h - 97FFh (9000h used), Bank 4: B000h - B7FFh (B000h used)
 // AB is on 0x0000, 0x0001
 void __no_inline_not_in_flash_func(loadrom_konamiscc)(uint32_t offset)

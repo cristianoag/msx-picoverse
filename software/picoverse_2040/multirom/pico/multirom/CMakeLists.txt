@@ -35,7 +35,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(multirom mapper.c multirom.c)
+add_executable(multirom multirom.c)
 
 pico_set_program_name(multirom "multirom")
 pico_set_program_version(multirom "0.1")

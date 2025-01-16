@@ -18,15 +18,12 @@
 #include "pico/multicore.h"
 #include "hardware/clocks.h"
 #include "multirom.h"
-#include "mapper.h"
 
 // config area and buffer for the ROM data
-#define ROM_START    0x8000;    // ROM data starts at __flash_binary_end + 32768 (MENU)  = __flash_binary_end + 0x8000h
-#define MAX_MEM_SIZE (128*1024) // Maximum memory size
-#define MONITOR_ADDR 0x9D01     // Monitor ROM address - Configuration binary 0x8000+(ROM_RECORD_SIZE*MAX_ROM_RECORDS)+1 = 0x8000 +0x1D00 + 0x1 = 0x9D01
+#define MONITOR_ADDR    0x9D01     // Monitor ROM address - Configuration binary 0x8000+(ROM_RECORD_SIZE*MAX_ROM_RECORDS)+1 = 0x8000 +0x1D00 + 0x1 = 0x9D01
 #define ROM_RECORD_SIZE 29      // Size of the ROM record in the configuration area in bytes
 #define MAX_ROM_RECORDS 256     // Maximum ROM files supported 2^8=256
-#define ROM_NAME_MAX 20         // Maximum size of the ROM name
+#define ROM_NAME_MAX    20         // Maximum size of the ROM name
 
 // This symbol marks the end of the main program in flash.
 // Custom data starts right after it
@@ -252,11 +249,8 @@ void __no_inline_not_in_flash_func(loadrom_linear48)(uint32_t offset)
 // loadrom_konamiscc - Load a any Konami SCC ROM into the MSX directly from the pico flash
 // The KonamiSCC ROMs are divided into 8KB segments, managed by a memory mapper that allows dynamic switching of these segments 
 // into the MSX's address space. Since the size of the mapper is 8Kb, the memory banks are:
-//
 // Bank 1: 4000h - 5FFFh , Bank 2: 6000h - 7FFFh, Bank 3: 8000h - 9FFFh, Bank 4: A000h - BFFFh
-//
 // And the address to change banks are:
-//
 // Bank 1: 5000h - 57FFh (5000h used), Bank 2: 7000h - 77FFh (7000h used), Bank 3: 9000h - 97FFh (9000h used), Bank 4: B000h - B7FFh (B000h used)
 // AB is on 0x0000, 0x0001
 void __no_inline_not_in_flash_func(loadrom_konamiscc)(uint32_t offset)
@@ -312,11 +306,8 @@ void __no_inline_not_in_flash_func(loadrom_konamiscc)(uint32_t offset)
 // loadrom_konami - Load a Konami (without SCC) ROM into the MSX directly from the pico flash
 // The Konami (without SCC) ROM is divided into 8KB segments, managed by a memory mapper that allows dynamic switching of these segments into the MSX's address space
 // Since the size of the mapper is 8Kb, the memory banks are:
-//
 //  Bank 1: 4000h - 5FFFh, Bank 2: 6000h - 7FFFh, Bank 3: 8000h - 9FFFh, Bank 4: A000h - BFFFh
-//
 // And the addresses to change banks are:
-//
 //	Bank 1: <none>, Bank 2: 6000h - 67FFh (6000h used), Bank 3: 8000h - 87FFh (8000h used), Bank 4: A000h - A7FFh (A000h used)
 // AB is on 0x0000, 0x0001
 void __no_inline_not_in_flash_func(loadrom_konami)(uint32_t offset)
@@ -370,11 +361,8 @@ void __no_inline_not_in_flash_func(loadrom_konami)(uint32_t offset)
 // loadrom_ascii8 - Load an ASCII8 ROM into the MSX directly from the pico flash
 // The ASCII8 ROM is divided into 8KB segments, managed by a memory mapper that allows dynamic switching of these segments into the MSX's address space
 // Since the size of the mapper is 8Kb, the memory banks are:
-// 
 // Bank 1: 4000h - 5FFFh , Bank 2: 6000h - 7FFFh, Bank 3: 8000h - 9FFFh, Bank 4: A000h - BFFFh
-//
 // And the address to change banks are:
-// 
 // Bank 1: 6000h - 67FFh (6000h used), Bank 2: 6800h - 6FFFh (6800h used), Bank 3: 7000h - 77FFh (7000h used), Bank 4: 7800h - 7FFFh (7800h used)
 // AB is on 0x0000, 0x0001
 void __no_inline_not_in_flash_func(loadrom_ascii8)(uint32_t offset)
@@ -427,9 +415,7 @@ void __no_inline_not_in_flash_func(loadrom_ascii8)(uint32_t offset)
 // loadrom_ascii16 - Load an ASCII16 ROM into the MSX directly from the pico flash
 // The ASCII16 ROM is divided into 16KB segments, managed by a memory mapper that allows dynamic switching of these segments into the MSX's address space
 // Since the size of the mapper is 16Kb, the memory banks are:
-//
 // Bank 1: 4000h - 7FFFh , Bank 2: 8000h - BFFFh
-//
 // And the address to change banks are:
 // Bank 1: 6000h - 67FFh (6000h used), Bank 2: 7000h - 77FFh (7000h and 77FFh used)
 void __no_inline_not_in_flash_func(loadrom_ascii16)(uint32_t offset)
@@ -477,16 +463,9 @@ void __no_inline_not_in_flash_func(loadrom_ascii16)(uint32_t offset)
 // Main function running on core 0
 int main()
 {
-    printf("Debug: Starting the MSX PICOVERSE 2040 multirom firmware\n");
-    // Set system clock to 270MHz
-    set_sys_clock_khz(270000, true);
-    // Initialize stdio
-    stdio_init_all();
-    // Initialize GPIO
-    setup_gpio();
-
-    // Start core 1 tasks
-    // multicore_launch_core1(core1_entry);
+    set_sys_clock_khz(270000, true);     // Set system clock to 270MHz
+    stdio_init_all();     // Initialize stdio
+    setup_gpio();     // Initialize GPIO
 
     int rom_index = loadrom_msx_menu(0x0000, 32768); //load the first 32KB ROM into the MSX (The MSX PICOVERSE MENU)
 

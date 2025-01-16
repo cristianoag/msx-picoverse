@@ -305,8 +305,8 @@ void navigateMenu()
         //printf("Key: %3d", key);
         printf("Size: %05lu/15872", totalSize/1024);
         //debug
-        Locate(20, 23);
-        printf("Memory Mapper: Off");
+        //Locate(20, 23);
+        //printf("Memory Mapper: Off");
         //printf("CPage: %2d Index: %2d", currentPage, currentIndex);
         Locate(0, (currentIndex%FILES_PER_PAGE) + 2);
         key = WaitKey();
