@@ -122,7 +122,7 @@ void clear_fkeys()
 clear_loop:
     ldi              ; Load (HL) with (DE), increment HL and DE, decrement BC
     dec hl           ; Adjust HL back to the correct position
-    ld (hl), #0       ; Set the current byte to 0
+    ld (hl), #0      ; Set the current byte to 0
     inc hl           ; Move to the next byte
     dec bc           ; Decrement the byte counter
     ld a, b          ; Check if BC has reached zero
@@ -190,7 +190,7 @@ void print_str_inverted(const char *str)
 
 char* mapper_description(int number) {
     // Array of strings for the descriptions
-    const char *descriptions[] = {"Plain16", "Plain32", "KonamiS", "Linear0", "ASCII8", "ASCII16", "Konami"};	
+    const char *descriptions[] = {"Plain16", "Plain32", "KonamiS", "Linear0", "ASCII8", "ASCII16", "Konami","NEO-8","NEO-16"};	
     return descriptions[number - 1];
 }
 
@@ -282,7 +282,7 @@ void helpMenu()
 // This function will load the game from the flash memory based on the index. 
 void loadGame(int index) 
 {
-    if (records[index].Mapper < 9)
+    if (records[index].Mapper != 0)
     {
         Poke(0x9D01, index); // Set the game index
         execute_rst00();

@@ -62,7 +62,9 @@ At this moment the tool can load and execute following ROM types:
 * Konami (without SCC)  
 * ASCII8  
 * ASCII16  
-
+* NEO-8 
+* NEO-16
+  
 To use it you need to run the multirom.exe tool in the same folder as the ROM files. Please rename the ROM files with names with up to 20 characters in the way you want them to appear in the menu. The tool will read the ROM files, detect their type and create a UF2 file that can be used to program the PICO board. 
 
 ```

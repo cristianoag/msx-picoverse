@@ -93,6 +93,10 @@ uint32_t file_size(const char *filename) {
 // ROM type: 0 - Unknown, 1 - 16KB ROM, 2 - 32KB ROM, 3 - Konami SCC ROM, 4 - 48KB Linear0 ROM, 5 - ASCII8 ROM, 6 - ASCII16 ROM, 7 - Konami (without SCC) ROM
 uint8_t detect_rom_type(const char *filename, uint32_t size) {
     
+    // Define the NEO8 signature
+    const char neo8_signature[] = "ROM_NEO8";
+    const char neo16_signature[] = "ROM_NE16";
+
     // Initialize weighted scores for different mapper types
     int konami_score = 0;
     int konami_scc_score = 0;
@@ -138,6 +142,7 @@ uint8_t detect_rom_type(const char *filename, uint32_t size) {
         free(rom);
         return 1;     // Plain 16KB 
     }
+
     if (rom[0] == 'A' && rom[1] == 'B' && size == 32768) {
 
         //check if it is a normal 32KB ROM or linear0 32KB ROM
@@ -148,8 +153,18 @@ uint8_t detect_rom_type(const char *filename, uint32_t size) {
         
         free(rom);
         return 2;     // Plain 32KB 
-
     }
+
+    // Check for the "AB" header at the start
+    if (rom[0] == 'A' && rom[1] == 'B') {
+        // Check for the NEO8 signature at offset 16
+        if (memcmp(&rom[16], neo8_signature, sizeof(neo8_signature) - 1) == 0) {
+            return 8; // NEO8 mapper detected
+        } else if (memcmp(&rom[16], neo16_signature, sizeof(neo16_signature) - 1) == 0) {
+            return 9; // NEO16 mapper detected
+        }
+    }
+
     // Check if the ROM has the signature "AB" at 0x4000 and 0x4001
     // That is the case for 48KB ROMs with Linear page 0 config
     if (rom[0x4000] == 'A' && rom[0x4001] == 'B' && size == 49152) {
@@ -196,6 +211,14 @@ uint8_t detect_rom_type(const char *filename, uint32_t size) {
                 }
             }
         }
+         
+        
+        /*
+        printf ("DEBUG: ascii8_score = %d\n", ascii8_score);
+        printf ("DEBUG: ascii16_score = %d\n", ascii16_score);
+        printf ("DEBUG: konami_score = %d\n", konami_score);
+        printf ("DEBUG: konami_scc_score = %d\n\n", konami_scc_score);
+        */
         
         if (ascii8_score==1) ascii8_score--;
 
@@ -277,7 +300,6 @@ void create_uf2_file(const char *combined_filename, const char *uf2_filename) {
     fclose(uf2_file);
     fclose(combined_file);
     printf("\nSuccessfully wrote %d blocks to %s.\n", numbl, uf2_filename);
-
 }
 
 // Main function

@@ -50,12 +50,12 @@
 static inline void setup_gpio();
 unsigned long read_ulong(const unsigned char *ptr);
 int isEndOfData(const unsigned char *memory);
-int __no_inline_not_in_flash_func(loadrom_msx_menu)(uint32_t offset, uint32_t size);
+int __no_inline_not_in_flash_func(loadrom_msx_menu)(uint32_t offset);
 void __no_inline_not_in_flash_func(loadrom_plain32)(uint32_t offset);
 void __no_inline_not_in_flash_func(loadrom_linear48)(uint32_t offset);
 void __no_inline_not_in_flash_func(loadrom_konamiscc)(uint32_t offset);
 void __no_inline_not_in_flash_func(loadrom_konami)(uint32_t offset);
 void __no_inline_not_in_flash_func(loadrom_ascii8)(uint32_t offset);
 void __no_inline_not_in_flash_func(loadrom_ascii16)(uint32_t offset);
-
-
+void __no_inline_not_in_flash_func(loadrom_neo8)(uint32_t offset);
+void __no_inline_not_in_flash_func(loadrom_neo16)(uint32_t offset);
