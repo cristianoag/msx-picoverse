@@ -36,9 +36,10 @@ This is a firmware to load a single ROM image (up to 8MB) from the flash memory 
 * Konami (without SCC)  
 * ASCII8  
 * ASCII16 
-* NEO8 (up to 8MB)
+* NEO-8 
+* NEO-16
 
-To use you need to run loadrom.exe passing the ROM file as a parameter. The tool will read the ROM file, attempt to detect the mapper used, and then create a UF2 file that can be used to program the PICO board. 
+To use you need to run loadrom.exe passing the ROM file as a parameter. The tool will read the ROM file, detect the mapper used using a heuristic approach, and then create a UF2 file that can be used to program the PICO board. 
 ```
 loadrom.exe romfile.rom
 ```
@@ -46,7 +47,7 @@ After the tool execution, you need to connect your cartridge to the PC via the U
 
 ### [multirom](multirom/)
 
-This is an alternative firmware that allows the selection of a ROM image from a list of ROMs stored in the flash memory of the PICO board. The ROM image is read directly from the flash memory and executed on the MSX. 
+This is an alternative firmware that allows the selection of a ROM image from a list of ROMs stored in the flash memory of the PICO board. The ROM image is read directly from the Raspberry Pi Pico flash memory and executed on the MSX. 
 
 |Menu - Page1|Menu - Page2|
 |---|---|

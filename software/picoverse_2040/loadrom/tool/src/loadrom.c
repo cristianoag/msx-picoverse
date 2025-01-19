@@ -50,7 +50,8 @@ const char *rom_types[] = {
     "ASCII8",           // Index 5
     "ASCII16",          // Index 6
     "Konami",           // Index 7
-    "NEO8"              // Index 8
+    "NEO8",             // Index 8
+    "NEO16"             // Index 9
 };
 
 // Function to get the size of a file
@@ -81,6 +82,7 @@ uint8_t detect_rom_type(const char *filename, uint32_t size) {
     
     // Define the NEO8 signature
     const char neo8_signature[] = "ROM_NEO8";
+    const char neo16_signature[] = "ROM_NE16";
 
     // Initialize weighted scores for different mapper types
     int konami_score = 0;
@@ -138,7 +140,6 @@ uint8_t detect_rom_type(const char *filename, uint32_t size) {
         
         free(rom);
         return 2;     // Plain 32KB 
-
     }
 
     // Check for the "AB" header at the start
@@ -146,6 +147,8 @@ uint8_t detect_rom_type(const char *filename, uint32_t size) {
         // Check for the NEO8 signature at offset 16
         if (memcmp(&rom[16], neo8_signature, sizeof(neo8_signature) - 1) == 0) {
             return 8; // NEO8 mapper detected
+        } else if (memcmp(&rom[16], neo16_signature, sizeof(neo16_signature) - 1) == 0) {
+            return 9; // NEO16 mapper detected
         }
     }
 
@@ -242,7 +245,6 @@ uint8_t detect_rom_type(const char *filename, uint32_t size) {
 // combined_filename - Name of the combined file
 // uf2_filename - Name of the UF2 file
 void create_uf2_file(const char *combined_filename, const char *uf2_filename) {
-    
     
     // Get the size of the combined file
     uint32_t sz = file_size(combined_filename);
