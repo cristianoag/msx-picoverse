@@ -27,7 +27,7 @@ uf2conv.exe testflash1-rom.bin testflash1-rom.uf2
 
 ### [loadrom](loadrom/dist/)
 
-This is a program to load a single ROM image (up to 2MB) from the flash memory of the PICO board. The ROM image is read directly from the flash memory and then executed. At this moment the tool can load and execute ROMs of the following types:
+This is a firmware to load a single ROM image (up to 8MB) from the flash memory of the PICO board. The ROM image is read directly from the flash memory and then executed. At this moment the tool can load and execute ROMs of the following types:
 
 * Plain16  
 * Plain32  
@@ -35,7 +35,8 @@ This is a program to load a single ROM image (up to 2MB) from the flash memory o
 * Konami SCC  
 * Konami (without SCC)  
 * ASCII8  
-* ASCII16  
+* ASCII16 
+* NEO8 (up to 8MB)
 
 To use you need to run loadrom.exe passing the ROM file as a parameter. The tool will read the ROM file, attempt to detect the mapper used, and then create a UF2 file that can be used to program the PICO board. 
 ```
@@ -45,7 +46,7 @@ After the tool execution, you need to connect your cartridge to the PC via the U
 
 ### [multirom](multirom/)
 
-This is an alternative firmware that allows the selection of a ROM image from a list of ROMs stored in the flash memory of the PICO board. The ROM image is read from the flash memory and copied to the RAM of the PICO board. The ROM image is then executed on the MSX. 
+This is an alternative firmware that allows the selection of a ROM image from a list of ROMs stored in the flash memory of the PICO board. The ROM image is read directly from the flash memory and executed on the MSX. 
 
 |Menu - Page1|Menu - Page2|
 |---|---|

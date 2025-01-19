@@ -568,6 +568,9 @@ void loadrom_konami_sram(uint32_t offset, uint32_t size)
                 } else if (addr == 0xA000) {
                     bank_registers[3] = read_data_bus();
                 }
+                while (!(gpio_get(PIN_WR))) {
+                    tight_loop_contents();
+                }
             }
         }
     }
@@ -689,6 +692,9 @@ void loadrom_ascii8_sram(uint32_t offset, uint32_t size)
                 } else if (addr == 0x7800) {
                     bank_registers[3] = read_data_bus();
                 }
+                while (!(gpio_get(PIN_WR))) {
+                    tight_loop_contents();
+                }
             }
         }
     }
@@ -735,14 +741,148 @@ void __no_inline_not_in_flash_func(loadrom_ascii16)(uint32_t offset)
                     } else if (addr >= 0x7000 && addr <= 0x77FF) {
                         bank_registers[1] = (gpio_get_all() >> 16) & 0xFF;
                     }
-                }
-                while (!(gpio_get(PIN_WR))) {
+                    while (!(gpio_get(PIN_WR))) {
                         tight_loop_contents();
+                    }
+                }
+                
+            }
+        }
+    }
+}
+
+// loadrom_neo8 - Load an NEO8 ROM into the MSX directly from the pico flash
+// The NEO8 ROM is divided into 8KB segments, managed by a memory mapper that allows dynamic switching of these segments into the MSX's address space
+// Size of a segment: 8 KB
+// Segment switching addresses:
+// Bank 0: 0000h~1FFFh, Bank 1: 2000h~3FFFh, Bank 2: 4000h~5FFFh, Bank 3: 6000h~7FFFh, Bank 4: 8000h~9FFFh, Bank 5: A000h~BFFFh
+// Switching address: 
+// 5000h (mirror at 1000h, 9000h and D000h), 
+// 5800h (mirror at 1800h, 9800h and D800h), 
+// 6000h (mirror at 2000h, A000h and E000h), 
+// 6800h (mirror at 2800h, A800h and E800h), 
+// 7000h (mirror at 3000h, B000h and F000h), 
+// 7800h (mirror at 3800h, B800h and F800h)
+void __no_inline_not_in_flash_func(loadrom_neo8)(uint32_t offset)
+{
+    // 16-bit bank registers initialized to zero (12-bit segment, 4 MSB reserved)
+    uint16_t bank_registers[6] = {0};
+
+    // Configure GPIO pins for input mode
+    gpio_set_dir_in_masked(0xFF << 16);
+
+    while (true)
+    {
+        bool sltsl = !(gpio_get(PIN_SLTSL)); // Slot selected (active low)
+        bool rd = !(gpio_get(PIN_RD));       // Read cycle (active low)
+        bool wr = !(gpio_get(PIN_WR));       // Write cycle (active low)
+
+        if (sltsl)
+        {
+            uint16_t addr = gpio_get_all() & 0x00FFFF; // Read address bus
+
+            if (addr <= 0xBFFF)
+            {
+                if (rd)
+                {
+                    // Handle read access
+                    gpio_set_dir_out_masked(0xFF << 16); // Data bus output mode
+                    uint8_t bank_index = addr >> 13;     // Determine bank index (0-5)
+
+                    if (bank_index < 6)
+                    {
+                        uint32_t segment = bank_registers[bank_index] & 0x0FFF; // 12-bit segment number
+                        uint32_t rom_offset = offset + (segment << 13) + (addr & 0x1FFF); // Calculate ROM offset
+                        gpio_put_masked(0xFF0000, rom[rom_offset] << 16); // Place data on data bus
+                    }
+                    else
+                    {
+                        gpio_put_masked(0xFF0000, 0xFF << 16); // Invalid page handling (Page 3)
+                    }
+
+                    while (!(gpio_get(PIN_RD))) // Wait for read cycle to complete
+                    {
+                        tight_loop_contents();
+                    }
+
+                    gpio_set_dir_in_masked(0xFF << 16); // Return data bus to input mode
+                }
+                else if (wr)
+                {
+                    // Handle write access
+                    uint16_t base_addr = addr & 0xF800; // Mask to identify base address
+                    uint8_t bank_index = 6;             // Initialize to invalid bank
+
+                    // Determine bank index based on base address
+                    switch (base_addr)
+                    {
+                        case 0x5000:
+                        case 0x1000:
+                        case 0x9000:
+                        case 0xD000:
+                            bank_index = 0;
+                            break;
+                        case 0x5800:
+                        case 0x1800:
+                        case 0x9800:
+                        case 0xD800:
+                            bank_index = 1;
+                            break;
+                        case 0x6000:
+                        case 0x2000:
+                        case 0xA000:
+                        case 0xE000:
+                            bank_index = 2;
+                            break;
+                        case 0x6800:
+                        case 0x2800:
+                        case 0xA800:
+                        case 0xE800:
+                            bank_index = 3;
+                            break;
+                        case 0x7000:
+                        case 0x3000:
+                        case 0xB000:
+                        case 0xF000:
+                            bank_index = 4;
+                            break;
+                        case 0x7800:
+                        case 0x3800:
+                        case 0xB800:
+                        case 0xF800:
+                            bank_index = 5;
+                            break;
+                    }
+
+                    if (bank_index < 6)
+                    {
+                        uint8_t data = read_data_bus() & 0xFF; // Read 8-bit data from bus
+                        if (addr & 0x01)
+                        {
+                            // Write to MSB
+                            bank_registers[bank_index] = (bank_registers[bank_index] & 0x00FF) | (data << 8);
+                        }
+                        else
+                        {
+                            // Write to LSB
+                            bank_registers[bank_index] = (bank_registers[bank_index] & 0xFF00) | data;
+                        }
+
+                        // Ensure reserved MSB bits are zero
+                        bank_registers[bank_index] &= 0x0FFF;
+                    }
+
+                    while (!(gpio_get(PIN_WR))) // Wait for write cycle to complete
+                    {
+                        tight_loop_contents();
+                    }
                 }
             }
         }
     }
 }
+
+
 
 // -----------------------
 // Main program
@@ -777,6 +917,7 @@ int __no_inline_not_in_flash_func(main)()
     // 5 - ASCII8 ROM
     // 6 - ASCII16 ROM
     // 7 - Konami (without SCC) ROM
+    // 8 - NEO8 ROM
     switch (rom_type) 
     {
         case 1:
@@ -803,6 +944,9 @@ int __no_inline_not_in_flash_func(main)()
         case 7:
             loadrom_konami(0x1d); //flash version
             //loadrom_konami_sram(0x1d, rom_size); //sram version
+            break;
+        case 8:
+            loadrom_neo8(0x1d); //flash version
             break;
         default:
             printf("Unknown ROM type: %d\n", 1);
