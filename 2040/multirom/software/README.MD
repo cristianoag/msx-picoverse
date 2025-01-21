@@ -1,6 +1,6 @@
-# MSX PICOVERSE 2040 SOFTWARE PLAYGROUND
+# MSX PICOVERSE 2040 MULTIROM SOFTWARE PLAYGROUND
 
-This page summarizes the software options currently available or in development for the PicoVerse 2040 cartridges. The software will be fully open-sourced and available for download in this repository.
+This page summarizes the software options currently available or in development for the PicoVerse 2040 MultiRom cartridge. 
 
 ## Software and Tools you may need to develop for the PicoVerse 2040
 
@@ -51,7 +51,7 @@ This is an alternative firmware that allows the selection of a ROM image from a 
 
 |Menu - Page1|Menu - Page2|
 |---|---|
-|![alt text](../../images/Multirom1.png)|![alt text](../../images/Multirom2.png)|
+|![alt text](/images/Multirom1.png)|![alt text](/images/Multirom2.png)|
 
 At this moment the tool can load and execute following ROM types:
 
