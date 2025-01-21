@@ -44,6 +44,8 @@ Both cartridges have the same features, the only difference is the level shifter
 
 The PicoVerse 2040 Audio Cartridge is a cartridge that allows the user to play MP3 audio files on the MSX computer and implements audio related resources to be used by software running on the MSX computer. The cartridge has a USB port that can be used to connect the cartridge to a computer and transfer ROM or music files to the Pico flash memory. 
 
+The cartridge features a MP3 player client for the MSX computer that can be used to play music files stored on the Pico flash memory.
+
 |Cartridge Design Files|BOM|Image|
 |-----------------------|------------------|------------------|
 |TBI|||
@@ -51,6 +53,8 @@ The PicoVerse 2040 Audio Cartridge is a cartridge that allows the user to play M
 #### PicoVerse 2040 WiFi Cartridge
 
 The PicoVerse 2040 WiFi Cartridge is a cartridge that allows the user to connect the MSX computer to a wireless network. The cartridge has a USB port that can be used to connect the cartridge to a computer and update the firmware.
+
+The cartridge features a UNAPI driver for the MSX computer that can be used to connect to a wireless network. The driver was created by Oduvaldo Pavan Jr. and is available on his [GitHub repository](https://github.com/ducasp/MSX-Development).
 
 |Cartridge Design Files|BOM|Image|
 |-----------------------|------------------|------------------|
