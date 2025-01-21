@@ -1,9 +1,0 @@
-(sym_lib_table
-  (version 7)
-  (lib (name "74LVC541AD_112")(type "KiCad")(uri "${KIPRJMOD}/libraries/74LVC541AD_112.kicad_sym")(options "")(descr ""))
-  (lib (name "msx-con")(type "KiCad")(uri "${KIPRJMOD}/libraries/msx-con.kicad_sym")(options "")(descr ""))
-  (lib (name "TC74LCX163245")(type "KiCad")(uri "${KIPRJMOD}/libraries/TC74LCX163245.kicad_sym")(options "")(descr ""))
-  (lib (name "MCU_Module_RaspberryPi_Pico")(type "KiCad")(uri "${KIPRJMOD}/libraries/MCU_Module_RaspberryPi_Pico.kicad_sym")(options "")(descr ""))
-  (lib (name "OLIMEX")(type "KiCad")(uri "${KIPRJMOD}/libraries/OLIMEX.kicad_sym")(options "")(descr ""))
-  (lib (name "RP2040-PURPLE")(type "KiCad")(uri "${KIPRJMOD}/libraries/RP2040-PURPLE.kicad_sym")(options "")(descr ""))
-)
