@@ -25,16 +25,20 @@ endif()
 # ====================================================================================
 set(PICO_BOARD pico CACHE STRING "Board type")
 
+set(PICO_EXTRAS_FETCH_FROM_GIT ON)
+
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
+include(pico_extras_import.cmake)
 
 project(musicplayer C CXX ASM)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
-# Add executable. Default name is the project name, version 0.1
+add_subdirectory(lib/picomp3lib/src)
 
+# Add executable. Default name is the project name, version 0.1
 add_executable(musicplayer musicplayer.c )
 
 pico_set_program_name(musicplayer "musicplayer")
@@ -46,15 +50,13 @@ pico_enable_stdio_usb(musicplayer 1)
 
 # Add the standard library to the build
 target_link_libraries(musicplayer
-        pico_stdlib )
+        pico_stdlib 
+        pico_audio_i2s
+        picomp3lib)
 
-# Add the standard include files to the build
 target_include_directories(musicplayer PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}
 )
-
-# Link pico_audio_i2s_32b to your project
-target_link_libraries(musicplayer )
 
 pico_add_extra_outputs(musicplayer)
 
