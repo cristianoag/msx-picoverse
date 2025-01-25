@@ -1,3 +1,14 @@
+// MSX PICOVERSE PROJECT
+// (c) 2025 Cristiano Goncalves
+// The Retro Hacker
+//
+// loadmp3.c - Simple MP3 loader for MSX PICOVERSE project - v1.0
+//
+// This is  small test program that demonstrates how to load and play a MP3 file from flash memory
+// 
+// This work is licensed  under a "Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+// License". https://creativecommons.org/licenses/by-nc-sa/4.0/
+
 #include <stdio.h>
 #include <string.h>
 #include "pico/stdlib.h"
@@ -34,7 +45,9 @@ void init_audio()
     };
 
     // Initialize the audio buffer pool with 3 buffers, each capable of holding 576 samples
-    audio_buffer_pool = audio_new_producer_pool(&producer_format, 3, 576);
+    //audio_buffer_pool = audio_new_producer_pool(&producer_format, 3, 576);
+    audio_buffer_pool = audio_new_producer_pool(&producer_format, 3, 1152);
+
     if (!audio_buffer_pool) {
         printf("Failed to create audio buffer pool.\n");
         while (1);
@@ -81,7 +94,7 @@ void play_mp3(const uint8_t *mp3_data, size_t mp3_size) {
         mp3_size -= offset;
 
         //printf("Decoding MP3 frame at offset %d\n", offset);
-        printf("MP3 data size: %d\n", mp3_size);
+        //printf("MP3 data size: %d\n", mp3_size);
         err = MP3Decode(hMP3Decoder, (uint8_t **)&mp3_data, (int *)&mp3_size, pcm_buffer, 0);
         if (err) {
             printf("MP3 decode error: %d\n", err);
@@ -109,14 +122,25 @@ void main()
 {
     stdio_init_all();
 
+    //setup_gpio();
+
+    char mp3_name[20];
+    memcpy(mp3_name, rom, 20);
+    uint32_t mp3_size;
+    memcpy(&mp3_size, rom + 20, sizeof(uint32_t));
+    uint8_t offset = 0x1c;
+
+    // Print the ROM name and type
+    printf("ROM name: %s\n", mp3_name);
+    printf("ROM size: %d\n", mp3_size);
+
     // Initialize I2S audio
     init_audio();
 
     // Get MP3 data from flash
-    const uint8_t *mp3_file_data = rom;
-    size_t mp3_file_size = 3910656; // Replace with actual size of MP3 file in flash
+    const uint8_t *mp3_file_data = rom + offset;
 
     // Play MP3 directly from flash
-    play_mp3(mp3_file_data, mp3_file_size);
+    play_mp3(mp3_file_data, mp3_size);
 
 }
