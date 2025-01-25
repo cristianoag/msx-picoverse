@@ -14,9 +14,19 @@ This page summarizes the software options currently available or in development 
 
 ## Software
 
+### [loadmp3](loadmp3/)
+
+Loadmp3 is a simple utility that converts MP3 files to a format that can be played by the PicoVerse 2040 Audio cartridge. The utility converts MP3 files to a format that can be played by the UDA1334A I2S Stereo DAC. 
+
+```
+loadmp3 <filename>
+```
+After the tool execution, you need to connect your cartridge to the PC via the USB-C cable with the BOOTSEL button pushed, and copy the loadrom.uf2 file to drive that will be created in your operating system. The MP3 file will be played on your MSX computer. 
+
 ### [musicplayer](musicplayer/)
 
 This is a simple music player that plays music files stored in the flash memory of the PICO board. The music files are stored in the flash memory and are played using the UDA1334A I2S Stereo DAC. The music player supports the following file formats:
 
 * MP3
-* WAV
+
+In development!
