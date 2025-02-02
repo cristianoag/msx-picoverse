@@ -16,9 +16,9 @@
 #include "mp3dec.h"
 
 // Define I2S pins
-#define I2S_BCLK_PIN  00  // GPIO pin for I2S bit clock (BCLK)
-#define I2S_WSEL_PIN  01  // GPIO pin for I2S left-right clock (WS/LRCK)
-#define I2S_DATA_PIN  02  // GPIO pin for I2S data input (DIN)
+#define I2S_BCLK_PIN  28  // GPIO pin for I2S bit clock (BCLK)
+#define I2S_WSEL_PIN  29  // GPIO pin for I2S left-right clock (WS/LRCK)
+#define I2S_DATA_PIN  25  // GPIO pin for I2S data input (DIN)
 
 // Global audio buffer pool
 struct audio_buffer_pool *audio_buffer_pool;
