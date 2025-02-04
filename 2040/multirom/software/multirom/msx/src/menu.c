@@ -59,8 +59,8 @@ void readROMData(ROMRecord *records, unsigned char *recordCount, unsigned long *
     total = 0;
     while (count < MAX_ROM_RECORDS && !isEndOfData(memory)) {
         // Copy Name
-        MemCopy(records[count].Name, memory, 20);
-        //records[count].Name[19] = '\0'; // Ensure null termination
+        MemCopy(records[count].Name, memory, 19);
+        records[count].Name[19] = '\0'; // Ensure null termination
         records[count].Mapper = memory[20]; // Read Mapper code
         records[count].Size = read_ulong(&memory[21]); // Read Size (4 bytes)
         records[count].Offset = read_ulong(&memory[25]); // Read Offset (4 bytes)

@@ -130,7 +130,7 @@ uint8_t detect_rom_type(const char *filename, uint32_t size) {
         return 1;     // Plain 16KB 
     }
 
-    if (rom[0] == 'A' && rom[1] == 'B' && size == 32768) {
+    if (rom[0] == 'A' && rom[1] == 'B' && size <= 32768) {
 
         //check if it is a normal 32KB ROM or linear0 32KB ROM
         if (rom[0x4000] == 'A' && rom[0x4001] == 'B') {
@@ -304,14 +304,14 @@ int main(int argc, char *argv[])
     // Open the PICO firmware binary file
     FILE *input_file = fopen(PICOFIRMWARE, "rb");
     if (!input_file) {
-        perror("Failed to open PICO firmware binary file");
+        printf("Failed to open PICO firmware binary file");
         return 1;
     }
 
     // Create the final output file
     FILE *output_file = fopen(COMBINED_FILE, "wb");
     if (!output_file) {
-        perror("Failed to create final output file");
+        printf("Failed to create final output file");
         fclose(input_file);
         return 1;
     }
@@ -331,7 +331,7 @@ int main(int argc, char *argv[])
     // Open the ROM file
     FILE *rom_file = fopen(argv[1], "rb");
     if (!rom_file) {
-        perror("Failed to open ROM file");
+        printf("Failed to open ROM file");
         fclose(output_file);
         return 1;
     }

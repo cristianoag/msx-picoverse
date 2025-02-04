@@ -143,7 +143,7 @@ uint8_t detect_rom_type(const char *filename, uint32_t size) {
         return 1;     // Plain 16KB 
     }
 
-    if (rom[0] == 'A' && rom[1] == 'B' && size == 32768) {
+    if (rom[0] == 'A' && rom[1] == 'B' && size <= 32768) {
 
         //check if it is a normal 32KB ROM or linear0 32KB ROM
         if (rom[0x4000] == 'A' && rom[0x4001] == 'B') {
@@ -356,36 +356,39 @@ int main()
                 strncpy(rom_name, entry->d_name, MAX_FILE_NAME_LENGTH);
             }
 
-            // Write the file name (20 bytes)
-            fwrite(rom_name, 1, MAX_FILE_NAME_LENGTH, output_file);
-            current_size += MAX_FILE_NAME_LENGTH;
-
+            // Only process the ROM file if it is a valid ROM/supported mapper
             rom_size = file_size(entry->d_name);
+            uint8_t mapper_byte = detect_rom_type(entry->d_name, rom_size);
+            if (mapper_byte != 0)
+            {
+                // Write the file name (20 bytes)
+                fwrite(rom_name, 1, MAX_FILE_NAME_LENGTH, output_file);
+                current_size += MAX_FILE_NAME_LENGTH;
 
-            // Write the mapper (1 byte)
-             uint8_t mapper_byte = detect_rom_type(entry->d_name, rom_size);
-             fwrite(&mapper_byte, 1, 1, output_file);
-             current_size += 1;
+                // Write the mapper (1 byte)
+                fwrite(&mapper_byte, 1, 1, output_file);
+                current_size += 1;
 
-            // Write the file size (4 bytes)
-            fwrite(&rom_size, 4, 1, output_file);
-            current_size += 4;
+                // Write the file size (4 bytes)
+                fwrite(&rom_size, 4, 1, output_file);
+                current_size += 4;
 
-            // Write the flash offset (4 bytes)
-            fwrite(&fl_offset, 4, 1, output_file);
-            current_size += 4;
+                // Write the flash offset (4 bytes)
+                fwrite(&fl_offset, 4, 1, output_file);
+                current_size += 4;
 
-            // Print file information
-            printf("File %02d: Name = %-20s, Size = %07u bytes, Flash Offset = 0x%08X, Mapper = %02d\n", file_index, rom_name, rom_size, fl_offset, mapper_byte);
+                // Print file information
+                printf("File %02d: Name = %-20s, Size = %07u bytes, Flash Offset = 0x%08X, Mapper = %02d\n", file_index, rom_name, rom_size, fl_offset, mapper_byte);
 
-            // Update base offset for the next file
-            base_offset += rom_size;
+                // Update base offset for the next file
+                base_offset += rom_size;
 
-            // Store rom information
-            strncpy(files[file_count].file_name, entry->d_name, sizeof(files[file_count].file_name));
-            files[file_count].file_size = rom_size;
-            file_count++;
-            file_index++;
+                // Store rom information
+                strncpy(files[file_count].file_name, entry->d_name, sizeof(files[file_count].file_name));
+                files[file_count].file_size = rom_size;
+                file_count++;
+                file_index++;
+            }
         }
     }
 
