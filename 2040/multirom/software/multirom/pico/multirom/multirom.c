@@ -451,10 +451,11 @@ void __no_inline_not_in_flash_func(loadrom_ascii16)(uint32_t offset)
                     } else if (addr >= 0x7000 && addr <= 0x77FF) {
                         bank_registers[1] = (gpio_get_all() >> 16) & 0xFF;
                     }
-                }
-                while (!(gpio_get(PIN_WR))) {
+                    while (!(gpio_get(PIN_WR))) {
                         tight_loop_contents();
+                    }
                 }
+                
             }
         }
     }
