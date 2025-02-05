@@ -31,7 +31,7 @@
 
 #define MAX_FILE_NAME_LENGTH    20             // Maximum length of a ROM name
 #define MIN_ROM_SIZE            8192           // Minimum size of a ROM file
-#define MAX_ROM_SIZE            8*1024*1024    // Maximum size of a ROM file
+#define MAX_ROM_SIZE            10*1024*1024    // Maximum size of a ROM file
 #define MAX_ANALYSIS_SIZE       131072         // 128KB for the mapper analysis
 #define FLASH_START             0x10000000     // Start of the flash memory on the Raspberry Pi Pico
 

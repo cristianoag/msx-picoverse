@@ -190,7 +190,7 @@ void print_str_inverted(const char *str)
 
 char* mapper_description(int number) {
     // Array of strings for the descriptions
-    const char *descriptions[] = {"Plain16", "Plain32", "KonamiS", "Linear0", "ASCII8", "ASCII16", "Konami","NEO-8","NEO-16"};	
+    const char *descriptions[] = {"PL-16", "PL-32", "KonSCC", "L0", "ASC-8", "ASC-16", "Konami","NEO-8","NEO-16"};	
     return descriptions[number - 1];
 }
 
@@ -205,21 +205,21 @@ void displayMenu() {
 
 
     Locate(0, 0);
-    printf("MSX PICOVERSE 2040     [MultiROM v1.0]");
+    printf("MSX PICOVERSE 2040    [MultiROM v1.0]");
     Locate(0, 1);
-    printf("--------------------------------------");
+    printf("-------------------------------------");
     unsigned char xi = currentIndex%(FILES_PER_PAGE); // Calculate the index of the file to start displaying
     for (int i = 0; (i < FILES_PER_PAGE) && (xi<totalFiles-1) && (i<totalFiles); i++)  // Loop through the files
     {   
         Locate(0, 2 + i); // Position on the screen, starting at line 2
         xi = i+((currentPage-1)*FILES_PER_PAGE); // Calculate the index of the file to display
-        printf(" %-24s %04lu %-8s",records[xi].Name, records[xi].Size/1024, mapper_description(records[xi].Mapper));  // Print each file name, size and mapper
+        printf(" %-24s %04lu %-7s",records[xi].Name, records[xi].Size/1024, mapper_description(records[xi].Mapper));  // Print each file name, size and mapper
     }
     // footer
     Locate(0, 21);
-    printf("--------------------------------------");
+    printf("-------------------------------------");
     Locate(0, 22);
-    printf("Page: %02d/%02d    [H - Help] [C - Config]",currentPage, totalPages); // Print the page number and the help and config options
+    printf("Page: %02d/%02d   [H - Help] [C - Config]",currentPage, totalPages); // Print the page number and the help and config options
     Locate(0, (currentIndex%FILES_PER_PAGE) + 2); // Position the cursor on the selected file
     printf(">"); // Print the cursor
     print_str_inverted(records[currentIndex%FILES_PER_PAGE].Name); // Print the selected file name inverted
@@ -231,17 +231,17 @@ void configMenu()
 {
     Cls(); // Clear the screen
     Locate(0,0);
-    printf("MSX PICOVERSE 2040     [MultiROM v1.0]");
+    printf("MSX PICOVERSE 2040    [MultiROM v1.0]");
     Locate(0, 1);
-    printf("---------------------------------------");
+    printf("-------------------------------------");
     Locate(0, 2);
 
     
 
     Locate(0, 21);
-    printf("--------------------------------------");
+    printf("-------------------------------------");
     Locate(0, 22);
-    printf("Press any key to return to the menu...");
+    printf("Press any key to return to the menu!");
     InputChar();
     displayMenu();
     navigateMenu();
@@ -254,9 +254,9 @@ void helpMenu()
     
     Cls(); // Clear the screen
     Locate(0,0);
-    printf("MSX PICOVERSE 2040     [MultiROM v1.0]");
+    printf("MSX PICOVERSE 2040    [MultiROM v1.0]");
     Locate(0, 1);
-    printf("---------------------------------------");
+    printf("-------------------------------------");
     Locate(0, 2);
     printf("Use [UP]  [DOWN] to navigate the menu.");
     Locate(0, 3);
@@ -270,9 +270,9 @@ void helpMenu()
     Locate(0, 7);
     printf("Press [C] to display the config page.");
     Locate(0, 21);
-    printf("--------------------------------------");
+    printf("-------------------------------------");
     Locate(0, 22);
-    printf("Press any key to return to the menu...");
+    printf("Press any key to return to the menu!");
     InputChar();
     displayMenu();
     navigateMenu();
