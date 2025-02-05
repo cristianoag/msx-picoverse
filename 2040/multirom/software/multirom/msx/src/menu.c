@@ -190,7 +190,7 @@ void print_str_inverted(const char *str)
 
 char* mapper_description(int number) {
     // Array of strings for the descriptions
-    const char *descriptions[] = {"PL-16", "PL-32", "KonSCC", "Linear", "ASC-8", "ASC-16", "Konami","NEO-8","NEO-16"};	
+    const char *descriptions[] = {"PL-16", "PL-32", "KonSCC", "Linear", "ASC-08", "ASC-16", "Konami","NEO-8","NEO-16"};	
     return descriptions[number - 1];
 }
 
