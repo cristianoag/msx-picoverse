@@ -12,13 +12,13 @@ The project is still in its early stages, and we are looking for contributors to
 
 Hardware was designed in two classes, first covering the RP2040 chip variants and the second covering the RP2350B chip variants. The designs are based on the Raspberry Pico development boards, which are widely available and have a large community of developers.
 
-| Prototype PCB (front) | Prototype PCB (back) |
-|---------|---------|
-| ![Image 1](images/20241230_001854885_iOS.jpg) | ![Image 2](images/20241230_001901504_iOS.jpg) | 
-
 ### Cartridges based on the RP2040 chip (PicoVerse 2040)
 
 The RP2040 is a dual-core ARM Cortex-M0+ microcontroller operating initially at 133 MHz, featuring 264 KB of SRAM and support for external flash memory. It offers a variety of interfaces, including GPIO pins, SPI, I²C, UART, ADCs, PWM channels, and USB support.
+
+| Prototype PCB (front) | Prototype PCB (back) |
+|---------|---------|
+| ![Image 1](images/20241230_001854885_iOS.jpg) | ![Image 2](images/20241230_001901504_iOS.jpg) | 
 
 PicoVerse 2040 cartridges are designed for development boards that expose 30 GPIO pins and are **NOT compatible** with standard Raspberry Pi Pico boards. 
 
@@ -63,6 +63,11 @@ The cartridge features a UNAPI driver for the MSX computer that can be used to c
 ### Cartridges based on the RP2350B chip (PicoVerse 2350)
 
 The RP2350, introduced in August 2024 by Raspberry Pi Ltd., is a high-performance microcontroller featuring a dual-core, dual-architecture design with selectable Arm Cortex-M33 or Hazard3 RISC-V cores, operating up to 150 MHz. It includes 520 KB of on-chip SRAM, supports up to 16 MB of external QSPI flash or PSRAM, and offers multiple communication interfaces (2× UART, 2× SPI, 2× I²C), 24 PWM channels, up to 8 ADC channels, 48 GPIO pins, USB 1.1 support, and 12 PIO state machines for flexible interfacing.
+
+
+| Prototype PCB (front) | Prototype PCB (back) |
+|---------|---------|
+| ![Image 1](images/20250208_180923511_iOS.jpg) | ![Image 2](images\20250208_181032059_iOS.jpg) |
 
 PicoVerse 2350 cartridges are based on development boards that expose 48 GPIO pins and are **NOT compatible** with conventional Raspberry Pi Pico 2 development boards, which typically expose only 26 GPIO pins. 
 
