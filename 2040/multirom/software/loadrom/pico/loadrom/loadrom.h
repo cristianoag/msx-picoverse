@@ -1,5 +1,5 @@
 // MSX PICOVERSE PROJECT
-// (c) 2024 Cristiano Goncalves
+// (c) 202 Cristiano Goncalves
 // The Retro Hacker
 //
 // loadrom.h - Simple ROM loader for MSX PICOVERSE project - v1.0

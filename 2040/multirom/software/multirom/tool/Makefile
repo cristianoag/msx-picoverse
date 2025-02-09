@@ -5,8 +5,8 @@ BINDIR = build
 DISDIR = dist
 
 VERBOSE = --verbose
-#CCFLAGS = -g -DDEBUG
-CCFLAGS = -g 
+CCFLAGS = -g -DDEBUG
+#CFLAGS = -g 
 
 SOURCES = multirom.c
 OUTFILE = multirom.exe

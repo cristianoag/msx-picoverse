@@ -1,5 +1,0 @@
-(sym_lib_table
-  (version 7)
-  (lib (name "msx-con")(type "KiCad")(uri "${KIPRJMOD}/libraries/msx-con.kicad_sym")(options "")(descr ""))
-  (lib (name "WeAct")(type "KiCad")(uri "${KIPRJMOD}/libraries/WeAct.kicad_sym")(options "")(descr ""))
-)
