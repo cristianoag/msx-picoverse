@@ -67,7 +67,7 @@ The RP2350, introduced in August 2024 by Raspberry Pi Ltd., is a high-performanc
 
 | Prototype PCB (front) | Prototype PCB (back) |
 |---------|---------|
-| ![Image 1](images/20250208_180923511_iOS.jpg) | ![Image 2](images\20250208_181032059_iOS.jpg) |
+| ![Image 1](images/20250208_180923511_iOS.jpg) | ![Image 2](images/20250208_181032059_iOS.jpg) |
 
 PicoVerse 2350 cartridges are based on development boards that expose 48 GPIO pins and are **NOT compatible** with conventional Raspberry Pi Pico 2 development boards, which typically expose only 26 GPIO pins. 
 
