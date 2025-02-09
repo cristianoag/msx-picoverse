@@ -51,10 +51,10 @@
 #define PIN_D7     23
 
 // Control signals
-#define PIN_RD     26   // Read strobe from MSX
-#define PIN_WR     27   // Write strobe from MSX
-#define PIN_SLTSL  28   // Slot Select for this cartridge slot
-#define PIN_IORQ   29   // IO Request line from MSX
+#define PIN_RD     24   // Read strobe from MSX
+#define PIN_WR     26   // Write strobe from MSX
+#define PIN_SLTSL  27   // Slot Select for this cartridge slot
+#define PIN_IORQ   28   // IO Request line from MSX
 #define PIN_WAIT    46  // WAIT line to MSX 
 #define PIN_BUSSDIR 47  // Bus direction line 
 

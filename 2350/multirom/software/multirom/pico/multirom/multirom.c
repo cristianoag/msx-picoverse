@@ -86,6 +86,12 @@ static inline void setup_gpio()
     gpio_init(PIN_BUSSDIR); gpio_set_dir(PIN_BUSSDIR, GPIO_IN); gpio_pull_up(PIN_BUSSDIR);
 }
 
+static inline uint8_t __not_in_flash_func(read_data_bus)(void) {
+    // Read the GPIO_IN register and extract bits 16 to 23
+    uint32_t gpio_in = sio_hw->gpio_in;
+    return (sio_hw->gpio_in >> 16) & 0xFF;
+}
+
 // read_ulong - Read a 4-byte value from the memory area
 // This function will read a 4-byte value from the memory area pointed by ptr and return the value as an unsigned long
 // Parameters:
@@ -117,6 +123,16 @@ int isEndOfData(const unsigned char *memory) {
 //load the MSX Menu ROM into the MSX
 int __no_inline_not_in_flash_func(loadrom_msx_menu)(uint32_t offset)
 {
+    static uint8_t rom_sram[32768];
+
+    //setup the rom_sram buffer for the 32KB ROM
+    gpio_init(PIN_WAIT); // Init wait signal pin
+    gpio_set_dir(PIN_WAIT, GPIO_OUT); // Set the WAIT signal as output
+    gpio_put(PIN_WAIT, 0); // Wait until we are ready to read the ROM
+    memset(rom_sram, 0, 32768); // Clear the SRAM buffer
+    memcpy(rom_sram, rom + offset, 32768); //for 32KB ROMs we start at 0x4000
+    gpio_put(PIN_WAIT, 1); // Lets go!
+
     int record_count = 0; // Record count
     const uint8_t *record_ptr = rom + offset + 0x4000; // Pointer to the ROM records
     for (int i = 0; i < MAX_ROM_RECORDS; i++)      // Read the ROMs from the configuration area
@@ -142,34 +158,38 @@ int __no_inline_not_in_flash_func(loadrom_msx_menu)(uint32_t offset)
         // Check control signals
         bool sltsl = !(gpio_get(PIN_SLTSL)); // Slot selected (active low)
         bool rd = !(gpio_get(PIN_RD));       // Read cycle (active low)
-        bool wr = !(gpio_get(PIN_WR));       // Write cycle (active low, not used)
-        
+
         uint16_t addr = gpio_get_all() & 0x00FFFF; // Read the address bus
+        //uint16_t addr = sio_hw->gpio_in & 0x00FFFF;
         if (sltsl) 
         {
+            bool wr = !(gpio_get(PIN_WR));       // Write cycle (active low, not used)
+
+            if (wr && addr == 0x9D01) // Monitor ROM address 0x9D01
+            {   
+                    rom_index = (gpio_get_all() >> 16) & 0xFF;
+                    while (!(gpio_get(PIN_WR))) { // Wait until the write cycle completes (WR goes high){
+                        tight_loop_contents();
+                    }
+                    gpio_set_dir_in_masked(0xFF << 16); // Set data bus to input mode
+                    rom_selected = true;    // ROM selected
+            }
+
             if (addr >= 0x4000 && addr <= 0xBFFF) // Check if the address is within the ROM range
-            {
+            {   
                 if (rd)
                 {
                     gpio_set_dir_out_masked(0xFF << 16); // Set data bus to output mode
                     uint32_t rom_addr = offset + (addr - 0x4000); // Calculate flash address
-                    gpio_put_masked(0xFF0000, rom[rom_addr] << 16); // Write the data to the data bus
+                    gpio_put_masked(0xFF0000, rom_sram[rom_addr] << 16); // Write the data to the data bus
                     while (!(gpio_get(PIN_RD))) { // Wait until the read cycle completes (RD goes high)
                         tight_loop_contents();
                     }
                     gpio_set_dir_in_masked(0xFF << 16); // Set data bus to input mode
                 }
-                if (wr && addr == 0x9D01) // Monitor ROM address 0x9D01
-                {   
-                    //rom_index = (gpio_get_all() >> 16) & 0xFF;
-                    //while (!(gpio_get(PIN_WR))) { // Wait until the write cycle completes (WR goes high){
-                    //    tight_loop_contents();
-                    //}
-                    //gpio_set_dir_in_masked(0xFF << 16); // Set data bus to input mode
-                    //rom_selected = true;    // ROM selected
-                }
             } 
         }
+
         if (rd && addr == 0x0000 && rom_selected)   // lets return the rom_index and load the selected ROM
         {
             return rom_index;
@@ -701,7 +721,7 @@ void __no_inline_not_in_flash_func(loadrom_neo16)(uint32_t offset)
 // Main function running on core 0
 int main()
 {
-    set_sys_clock_khz(270000, true);     // Set system clock to 270MHz
+    set_sys_clock_khz(285000, true);     // Set system clock to 270MHz
     stdio_init_all();     // Initialize stdio
     setup_gpio();     // Initialize GPIO
 

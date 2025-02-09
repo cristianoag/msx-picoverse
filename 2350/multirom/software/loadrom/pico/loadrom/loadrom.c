@@ -100,8 +100,8 @@ static inline void setup_gpio()
     gpio_init(PIN_D7); 
 
     // Initialize control pins as input
-    gpio_init(PIN_RD); gpio_set_dir(PIN_RD, GPIO_IN); gpio_pull_up(PIN_RD);   
-    gpio_init(PIN_WR); gpio_set_dir(PIN_WR, GPIO_IN); gpio_pull_up(PIN_WR);
+    gpio_init(PIN_RD); gpio_set_dir(PIN_RD, GPIO_IN);  
+    gpio_init(PIN_WR); gpio_set_dir(PIN_WR, GPIO_IN); 
     gpio_init(PIN_IORQ); gpio_set_dir(PIN_IORQ, GPIO_IN); gpio_pull_up(PIN_IORQ);
     gpio_init(PIN_SLTSL); gpio_set_dir(PIN_SLTSL, GPIO_IN); gpio_pull_up(PIN_SLTSL);
     gpio_init(PIN_BUSSDIR); gpio_set_dir(PIN_BUSSDIR, GPIO_IN); gpio_pull_up(PIN_BUSSDIR);
@@ -323,7 +323,6 @@ void loadrom_linear48_sram(uint32_t offset, uint32_t size)
     }
 }
 
-
 // loadrom_konamiscc - Load a any Konami SCC ROM into the MSX directly from the pico flash
 // The KonamiSCC ROMs are divided into 8KB segments, managed by a memory mapper that allows dynamic switching of these segments 
 // into the MSX's address space. Since the size of the mapper is 8Kb, the memory banks are:
@@ -340,14 +339,15 @@ void __no_inline_not_in_flash_func(loadrom_konamiscc)(uint32_t offset)
     {
         // Check control signals
         bool sltsl = !(gpio_get(PIN_SLTSL)); // Slot selected (active low)
-        bool rd = !(gpio_get(PIN_RD));       // Read cycle (active low)
-        bool wr = !(gpio_get(PIN_WR));       // Write cycle (active low)
-
+        
         if (sltsl)
         {
             uint16_t addr = gpio_get_all() & 0x00FFFF; // Read the address bus
             if (addr >= 0x4000 && addr <= 0xBFFF)  // Check if the address is within the ROM range
             {
+                bool rd = !(gpio_get(PIN_RD));       // Read cycle (active low)
+            bool wr = !(gpio_get(PIN_WR));       // Write cycle (active low)
+
                 if (rd) 
                 {
                     gpio_set_dir_out_masked(0xFF << 16); // Set data bus to output mode
@@ -358,7 +358,7 @@ void __no_inline_not_in_flash_func(loadrom_konamiscc)(uint32_t offset)
                         tight_loop_contents();
                     }
                     gpio_set_dir_in_masked(0xFF << 16); // Return data bus to input mode after cycle completes
-                } else if (wr) 
+                }  else if (wr) 
                 {
                     // Handle writes to bank switching addresses
                     if ((addr >= 0x5000)  && (addr <= 0x57FF)) { 
@@ -375,7 +375,7 @@ void __no_inline_not_in_flash_func(loadrom_konamiscc)(uint32_t offset)
                     {
                         tight_loop_contents();
                     }
-                }
+                }  
             }
         }
     }
@@ -443,6 +443,11 @@ void loadrom_konamiscc_sram(uint32_t offset, uint32_t size)
                         bank_registers[2] = read_data_bus();
                     } else if (addr == 0xB000) {
                         bank_registers[3] = read_data_bus();
+                    }
+
+                    while (!(gpio_get(PIN_WR)))
+                    {
+                        tight_loop_contents();
                     }
                 }
             }
@@ -568,6 +573,7 @@ void loadrom_konami_sram(uint32_t offset, uint32_t size)
                 } else if (addr == 0xA000) {
                     bank_registers[3] = read_data_bus();
                 }
+
                 while (!(gpio_get(PIN_WR))) {
                     tight_loop_contents();
                 }
@@ -615,12 +621,16 @@ void __no_inline_not_in_flash_func(loadrom_ascii8)(uint32_t offset)
                 { 
                     if ((addr >= 0x6000) && (addr <= 0x67FF)) { 
                         bank_registers[0] = read_data_bus(); // Read the data bus and store in bank register
+                        //printf("Bank 1: %d\n", bank_registers[0]);
                     } else if ((addr >= 0x6800) && (addr <= 0x6FFF)) {
                         bank_registers[1] = read_data_bus();
+                        //printf("Bank 2: %d\n", bank_registers[1]);
                     } else if ((addr >= 0x7000) && (addr <= 0x77FF)) {
                         bank_registers[2] = read_data_bus();
+                        //printf("Bank 3: %d\n", bank_registers[2]);
                     } else if ((addr >= 0x7800) && (addr <= 0x7FFF)) {
                         bank_registers[3] = read_data_bus();
+                        //printf("Bank 4: %d\n", bank_registers[3]);
                     }
 
                     while (!(gpio_get(PIN_WR))) 
@@ -992,14 +1002,14 @@ void __no_inline_not_in_flash_func(loadrom_neo16)(uint32_t offset)
 // -----------------------
 int __no_inline_not_in_flash_func(main)()
 {
-    // Set systm clock to 270MHz
-    set_sys_clock_khz(270000, true);
+    // Set systm clock to 280MHz
+    set_sys_clock_khz(285000, true);
     //
     // Initialize stdio
     stdio_init_all();
     // Initialize GPIO
     setup_gpio();
-    //sleep_ms(10000);
+
     char rom_name[ROM_NAME_MAX];
     memcpy(rom_name, rom, ROM_NAME_MAX);
     uint8_t rom_type = rom[ROM_NAME_MAX];   // Get the ROM type

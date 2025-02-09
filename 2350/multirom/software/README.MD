@@ -1,8 +1,8 @@
-# MSX PICOVERSE 2040 MULTIROM SOFTWARE PLAYGROUND
+# MSX PICOVERSE 2350 MULTIROM SOFTWARE PLAYGROUND
 
-This page summarizes the software options currently available or in development for the PicoVerse 2040 MultiRom cartridge. 
+This page summarizes the software options currently available or in development for the PicoVerse 2350 MultiRom cartridge. 
 
-## Software and Tools you may need to develop for the PicoVerse 2040
+## Software and Tools you may need to develop for the PicoVerse 2350
 
 * [Visual Studio Code]( https://code.visualstudio.com/) - Code editor that can be used to develop software for the PicoVerse 2040 cartridges.
 * [Raspberry Pi Pico SDK](https://github.com/raspberrypi/pico-sdk) - The SDK is a collection of libraries and tools that are designed to make it easy to write programs for the RP2040 microcontroller.  
@@ -14,20 +14,9 @@ This page summarizes the software options currently available or in development 
 
 ## Software
 
-### [testflash1](testflash1/)
-
-This is small test program that demonstrates how to read the content of a ROM image that is appended to the end of the main program in the PICO flash memory. The ROM data is read from the flash memory and dumped to the serial console in hexdump format.
-
-To use it you need to concatenate the ROM to the resultant bin file for the testflash1. Use the following commands to prepare the UF2 file:
-
-```
-copy /b testflash1.bin+romfile.rom testflash1-rom.bin
-uf2conv.exe testflash1-rom.bin testflash1-rom.uf2
-```
-
 ### [loadrom](loadrom/)
 
-This is a firmware to load a single ROM image (up to 10MB) from the flash memory of the PICO board. The ROM image is read directly from the flash memory and then executed. At this moment the tool can load and execute ROMs of the following types:
+This is a firmware to load a single ROM image (up to 10MB) from the flash memory of the PICO 2350 board. The ROM image is read directly from the flash memory and then executed. At this moment the tool can load and execute ROMs of the following types:
 
 * Plain16  
 * Plain32  
@@ -47,11 +36,7 @@ After the tool execution, you need to connect your cartridge to the PC via the U
 
 ### [multirom](multirom/)
 
-This is an alternative firmware that allows the selection of a ROM image from a list of ROMs stored in the flash memory of the PICO board. The ROM image is read directly from the Raspberry Pi Pico flash memory and executed on the MSX. 
-
-|Menu - Page1|Menu - Page2|
-|---|---|
-|![alt text](/images/Multirom1.png)|![alt text](/images/Multirom2.png)|
+This is an alternative firmware that allows the selection of a ROM image from a list of ROMs stored in the flash memory of the PICO 2350 board. The ROM image is read directly from the Raspberry Pi Pico flash memory and executed on the MSX. 
 
 At this moment the tool can load and execute following ROM types:
 
@@ -71,7 +56,3 @@ To use it you need to run the multirom.exe tool in the same folder as the ROM fi
 multirom.exe
 ```
 Then connect your cartridge to the PC via the USB-C cable and copy the multirom.uf2 file to the PICO board. The menu will be executed and you can select the ROM to be loaded to the MSX.
-
-### [mmapper](mmapper/)
-
-The mmapper firmwate implements a 128KB memory mapper on the MSX computer. You just need to compile the code and copy the UF2 file to the PICO board. The firmware will be loaded and the memory mapper will be available to the MSX computer.
