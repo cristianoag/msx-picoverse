@@ -1,15 +1,13 @@
-; Dummy disk driver for Nextor 2.1
-; By Konamiman, 8/2018
+; MSX PICOVERSE PROJECT
+; (c) 2025 Cristiano Goncalves
+; The Retro Hacker
+; 
+; Nextor Driver for PicoVerse
 ;
-; This code can be used as the basis for developing
-; a real disk driver: just set DRV_TYPE appropriately,
-; change the driver name and version at DRV_NAME and VER_*, and
-; implement the required routines depending on the driver type.
-;
-; See the Nextor driver development guide for more details.
+
 org 4100h
 
-ds 100h
+ds 100h 
 
 DRV_START:
 
