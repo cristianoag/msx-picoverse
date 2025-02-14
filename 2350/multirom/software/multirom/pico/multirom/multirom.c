@@ -18,6 +18,7 @@
 #include "pico/multicore.h"
 #include "hardware/clocks.h"
 #include "multirom.h"
+#include "io.h"
 
 // config area and buffer for the ROM data
 #define MONITOR_ADDR    0x9D01     // Monitor ROM address - Configuration binary 0x8000+(ROM_RECORD_SIZE*MAX_ROM_RECORDS)+1 = 0x8000 +0x1D00 + 0x1 = 0x9D01
@@ -723,6 +724,9 @@ int main()
 {
     set_sys_clock_khz(285000, true);     // Set system clock to 270MHz
     stdio_init_all();     // Initialize stdio
+
+   // multicore_launch_core1(io_main);    // Launch core 1
+
     setup_gpio();     // Initialize GPIO
 
     int rom_index = loadrom_msx_menu(0x0000); //load the first 32KB ROM into the MSX (The MSX PICOVERSE MENU)

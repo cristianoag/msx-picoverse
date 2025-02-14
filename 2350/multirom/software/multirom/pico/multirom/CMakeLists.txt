@@ -34,9 +34,10 @@ project(multirom C CXX ASM)
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
-# Add executable. Default name is the project name, version 0.1
+add_subdirectory(lib/no-OS-FatFS-SD-SPI-RPi-Pico/FatFs_SPI)
 
-add_executable(multirom multirom.c )
+# Add executable. Default name is the project name, version 0.1
+add_executable(multirom io.c multirom.c )
 
 pico_set_program_name(multirom "multirom")
 pico_set_program_version(multirom "0.1")
@@ -48,7 +49,9 @@ pico_enable_stdio_usb(multirom 1)
 # Add the standard library to the build
 target_link_libraries(multirom
         pico_stdlib
-        pico_multicore)
+        FatFs_SPI
+        pico_multicore
+        )
 
 # Add the standard include files to the build
 target_include_directories(multirom PRIVATE
