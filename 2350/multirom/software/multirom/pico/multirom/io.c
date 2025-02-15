@@ -11,8 +11,6 @@ uint8_t __not_in_flash_func(msx_read_data)(void)
     return (gpio_get_all() >> 16) & 0xFF;
 }
 
-
-
 void __not_in_flash_func(io_main)() {
     sleep_ms(10000);
     printf("Initializing the microSD card\n");
@@ -46,7 +44,6 @@ void __not_in_flash_func(io_main)() {
     uint8_t pending_cmd = 0;
     uint32_t sector_addr = 0;
     int byte_count = 0;
-
 
     // New state variables for transfer phase after address has been received
     bool waiting_for_count = false;  // Waiting for the next data port access to get count
