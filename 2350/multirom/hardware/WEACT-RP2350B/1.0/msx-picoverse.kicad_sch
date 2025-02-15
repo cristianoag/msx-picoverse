@@ -4436,28 +4436,6 @@
 	)
 	(global_label "SPI_SCK"
 		(shape input)
-		(at 297.18 127 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "2d055afb-e3b8-49a4-ab86-d6731dc3c3d4")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 307.9666 127 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-	)
-	(global_label "SPI_SCK"
-		(shape input)
 		(at 347.98 81.28 180)
 		(fields_autoplaced yes)
 		(effects
@@ -4474,28 +4452,6 @@
 					(size 1.27 1.27)
 				)
 				(justify right)
-				(hide yes)
-			)
-		)
-	)
-	(global_label "SPI_CD"
-		(shape input)
-		(at 297.18 119.38 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "3036827c-e31f-4eec-b803-7591db99a7c5")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 306.7571 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
 				(hide yes)
 			)
 		)
@@ -4518,6 +4474,28 @@
 					(size 1.27 1.27)
 				)
 				(justify right)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "SPI_CD"
+		(shape input)
+		(at 297.18 116.84 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "37cf719f-9b02-4016-8239-bbf036b5885f")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 306.7571 116.84 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
 				(hide yes)
 			)
 		)
@@ -4962,6 +4940,28 @@
 			)
 		)
 	)
+	(global_label "SPI_MISO"
+		(shape input)
+		(at 297.18 109.22 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "7e3d2580-1040-4fbe-ada7-04c8ed71321d")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 308.8133 109.22 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+	)
 	(global_label "RD"
 		(shape input)
 		(at 248.92 76.2 180)
@@ -5072,6 +5072,28 @@
 			)
 		)
 	)
+	(global_label "SPI_SCK"
+		(shape input)
+		(at 297.18 114.3 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "903b8c7f-7136-4358-b2da-d1ec30b2293f")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 307.9666 114.3 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+	)
 	(global_label "A10"
 		(shape input)
 		(at 248.92 111.76 180)
@@ -5090,6 +5112,28 @@
 					(size 1.27 1.27)
 				)
 				(justify right)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "SPI_MOSI"
+		(shape input)
+		(at 297.18 111.76 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "9f6d7612-4ab4-44e8-b0b3-4433f49f476f")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 308.8133 111.76 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
 				(hide yes)
 			)
 		)
@@ -5380,28 +5424,6 @@
 			)
 		)
 	)
-	(global_label "SPI_MOSI"
-		(shape input)
-		(at 297.18 124.46 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "d59585a6-8489-4def-8a1c-8f63f5b6743d")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 308.8133 124.46 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-	)
 	(global_label "WR"
 		(shape input)
 		(at 297.18 134.62 0)
@@ -5503,28 +5525,6 @@
 		(uuid "dc10d164-dbdc-4021-9ccf-599eb34fd969")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 304.2776 83.82 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-	)
-	(global_label "SPI_MISO"
-		(shape input)
-		(at 297.18 121.92 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "dc1191c8-eab5-487a-829a-a73b37463c41")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 308.8133 121.92 0)
 			(effects
 				(font
 					(size 1.27 1.27)
