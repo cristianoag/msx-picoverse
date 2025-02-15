@@ -725,7 +725,7 @@ int main()
     set_sys_clock_khz(285000, true);     // Set system clock to 270MHz
     stdio_init_all();     // Initialize stdio
 
-   // multicore_launch_core1(io_main);    // Launch core 1
+    multicore_launch_core1(io_main);    // Launch core 1
 
     setup_gpio();     // Initialize GPIO
 

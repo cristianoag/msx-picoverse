@@ -2,8 +2,16 @@
 ; (c) 2025 Cristiano Goncalves
 ; The Retro Hacker
 ; 
-; Nextor Driver for PicoVerse
+; Nextor 2.1 Device-Based Driver for PicoVerse
 ;
+; I/O ports used:
+;   0x11  = Command port
+;   0x10  = Data port
+; Command codes:
+CMD_NEXTOR_READ_SECTOR   EQU 01h     ; Command to read one sector
+CMD_NEXTOR_WRITE_SECTOR  EQU 02h     ; Command to write one sector
+PORT_CMD  EQU 11h
+PORT_DATA EQU 10h
 
 org 4100h
 
@@ -21,7 +29,6 @@ DRV_START:
 
 CODE_ADD:	equ	0F1D0h
 
-
 ;-----------------------------------------------------------------------------
 ;
 ; Driver configuration constants
@@ -33,13 +40,11 @@ CODE_ADD:	equ	0F1D0h
 
 DRV_TYPE	equ	1
 
-
 ;Driver version
 
 VER_MAIN	equ	1
 VER_SEC		equ	0
 VER_REV		equ	0
-
 
 ;-----------------------------------------------------------------------------
 ;
@@ -217,18 +222,6 @@ DRV_NAME:
 
 	ds	12
 
-if DRV_TYPE eq 0
-
-; These routines are mandatory for drive-based drivers
-
-    jp  DRV_DSKIO
-    jp  DRV_DSKCHG
-    jp  DRV_GETDPB
-    jp  DRV_CHOICE
-    jp  DRV_DSKFMT
-    jp  DRV_MTOFF
-endif
-
 if DRV_TYPE eq 1
 
 	; These routines are mandatory for device-based drivers
@@ -290,7 +283,7 @@ DRV_TIMI:
 ;     get two allocated drives.)
 
 DRV_INIT:
-	xor	a
+	xor	a 	; For drive-based drivers this would be number of units; here we return 0.
 	ld	hl,0
 	ret
 
@@ -318,7 +311,7 @@ DRV_VERSION:
 ; it must be done via the CALLB0 routine in kernel page 0.
 
 DRV_BASSTAT:
-	scf
+	scf 	; Not handling BASIC extended statements
 	ret
 
 
@@ -329,7 +322,7 @@ DRV_BASSTAT:
 ; it must be done via the CALLB0 routine in kernel page 0.
 
 DRV_BASDEV:
-	scf
+	scf	; Not handling BASIC extended devices
 	ret
 
 
@@ -396,133 +389,6 @@ DRV_CONFIG:
 	ld a,1
 	ret
 	
-
-;=====
-;=====  BEGIN of DRIVE-BASED specific routines
-;=====
-
-if DRV_TYPE eq 0
-
-;-----------------------------------------------------------------------------
-;
-; Read/write disk sectors
-;
-;Input:    A  = Drive number, starting at 0
-;          Cy = 0 for reading sectors, 1 for writing sectors
-;          B  = Number of sectors to read/write
-;          C  = First sector number to read/write (bits 22-16) if bit 7 = 0
-;               Media ID if bit 7 = 1
-;          DE = First sector number to read/write (bits 15-0)
-;          HL = source/destination address for the transfer
-;Output:   Cy = 0 on success, 1 on error
-;          A  = Error code (on error only):
-;               0   Write protected
-;               2   Not ready
-;               4   Data (CRC) error
-;               6   Seek error
-;               8   Record not found
-;               10  Write fault
-;               12  Other errors
-;          B = Number of sectors actually read (in case of error only)
-
-DRV_DSKIO:
-	ld	a,12
-	scf
-	ret
-
-
-;-----------------------------------------------------------------------------
-;
-; Get disk change status
-;
-;Input:    A  = Drive number, starting at 0
-;          B  = C = Media descriptor
-;          HL = Base address for DPB -1
-;Output:   Cy = 0 on success, 1 on error
-;          A  = Error code (on error only)
-;               Same codes as DRV_DSKIO
-;          B  = Disk status (on success only)
-;               1  Disk not changed
-;               0  Unknown
-;              -1  Disk changed
-
-DRV_DSKCHG:
-	ld	a,12
-	scf
-      	ret
-      
-      
-;-----------------------------------------------------------------------------
-;
-; Get DPB for disk
-;
-;Input:    A  = Drive number, starting at 0
-;          B  = C = Media descriptor
-;          HL = Base address for DPB -1
-;Output:   -
-
-DRV_GETDPB:
-	ld	a,12
-	scf
-	ret
-
-
-;-----------------------------------------------------------------------------
-;
-; Return format choice string
-;
-;Input:   -
-;Output:  HL = Address of the choice string in the kernel slot
-
-DRV_CHOICE:
-	ld      hl,NULL_MSG
-	ret
-
-
-;-----------------------------------------------------------------------------
-;
-; Format a disk
-;
-;Input:   A  = Formatting choice, from 1 to 9 (see DRV_CHOICE).
-;         D  = Drive number, starting at 0
-;         HL = Address of work area in memory
-;         DE = Size of work area
-;Output:  Cy = 0 on success, 1 on error
-;         A  = Error code (on error only):
-;              0   Write protected
-;              2   Not ready
-;              4   Data (CRC) error
-;              6   Seek error
-;              8   Record not found
-;              10  Write fault
-;              12  Bad parameter
-;              14  Insufficient memory
-;              16  Other errors
-
-DRV_DSKFMT:
-	ld	a,16
-	scf
-	ret
-
-
-;-----------------------------------------------------------------------------
-;
-; Turn off the floppy disk drive motor
-;
-;Input:   -
-;Output:  -
-
-DRV_MTOFF:
-	ret
-
-endif
-
-
-;=====
-;=====  END of DRIVE-BASED specific routines
-;=====
-
-
 ;=====
 ;=====  BEGIN of DEVICE-BASED specific routines
 ;=====
@@ -554,10 +420,155 @@ if DRV_TYPE eq 1
 ;          B = Number of sectors actually read (in case of error only)
 
 DEV_RW:
-	ld	a,.NRDY
-	ld	b,0
+
+    ; Save flag state in A: 
+    ; Using "ld a,0" then "adc a,a" yields 0 if CF clear, 1 if CF set.
+    ld   a,0
+    adc  a,a        ; A = 0 if read, 1 if write
+    cp   0
+    jr   z, DEV_RW_READ_ENTRY
+    ;jr   DEV_RW_WRITE_ENTRY
+
+;----------------------------------------
+; Read Branch (CF=0)
+;----------------------------------------
+DEV_RW_READ_ENTRY:
+
+    push af         ; save our flag/state (also device index flag result is in A)
+    push bc
+    push de
+    push hl
+
+    ; Send read command
+    ld   a, CMD_NEXTOR_READ_SECTOR
+    out  (PORT_CMD), a
+
+    ; Send 4-byte sector address from DE
+    ld   a, (de)
+    out  (PORT_DATA), a
+    inc  de
+    ld   a, (de)
+    out  (PORT_DATA), a
+    inc  de
+    ld   a, (de)
+    out  (PORT_DATA), a
+    inc  de
+    ld   a, (de)
+    out  (PORT_DATA), a
+    inc  de     ; now DE is advanced past the 4-byte address
+
+    ; Send sector count (from B)
+    ld   a, b
+    out  (PORT_DATA), a
+
+    ; Copy sector count from B into D (we use D as outer loop counter)
+    ld   d, b
+
+DEV_RW_READ_SECTOR_LOOP:
+        
+	; If no more sectors to read, branch to DONE
+    ld   a, d
+    or   a
+    jr   z, DEV_RW_READ_DONE
+
+    ; For each sector, read 512 bytes
+    ; Use IX as a 16-bit inner loop counter.
+    ld   ix, 0x0200   ; 512 iterations
+
+DEV_RW_READ_INNER_LOOP:
+        
+	in   a, (PORT_DATA)   ; read one byte from Pico via PORT_DATA
+    ld   (hl), a        ; store it in buffer
+    inc  hl             ; advance buffer pointer
+    dec  ix             ; decrement inner counter (assumes DEC IX is supported)
+    jr   nz, DEV_RW_READ_INNER_LOOP
+
+    ; One sector done; decrement outer counter in D
+    dec  d
+    jr   DEV_RW_READ_SECTOR_LOOP
+
+DEV_RW_READ_DONE:
+        
+	; Return success: A = 0
+    ld   a, 0
+
+    pop  hl
+    pop  de
+    pop  bc
+    pop  af
 	ret
 
+;----------------------------------------
+; Write Branch (CF=1)
+;----------------------------------------
+DEV_RW_WRITE_ENTRY:
+        
+	push af
+    push bc
+    push de
+    push hl
+
+    ; Send write command
+    ld   a, CMD_NEXTOR_WRITE_SECTOR
+    out  (PORT_CMD), a
+
+    ; Send 4-byte sector address from DE
+    ld   a, (de)
+    out  (PORT_DATA), a
+    inc  de
+    ld   a, (de)
+    out  (PORT_DATA), a
+    inc  de
+    ld   a, (de)
+    out  (PORT_DATA), a
+    inc  de
+    ld   a, (de)
+    out  (PORT_DATA), a
+    inc  de
+
+    ; Send sector count (from B)
+    ld   a, b
+    out  (PORT_DATA), a
+
+    ; Copy sector count from B into D (outer loop counter)
+    ld   d, b
+
+DEV_RW_WRITE_LOOP:
+        
+	; If no more sectors to write, finish loop
+    ld   a, d
+    or   a
+    jr   z, DEV_RW_WRITE_DONE
+
+    ; For each sector, write 512 bytes from buffer pointed to by HL.
+    ld   ix, 0x0200   ; 512 iterations
+
+DEV_RW_WRITE_INNER_LOOP:
+
+    ld   a, (hl)     ; get one byte from buffer
+    out  (PORT_DATA), a  ; send it to Pico
+    inc  hl         ; advance buffer pointer
+    dec  ix         ; decrement inner loop counter
+    jr   nz, DEV_RW_WRITE_INNER_LOOP
+
+    ; One sector done; decrement outer counter D
+    dec  d
+    jr   DEV_RW_WRITE_LOOP
+
+DEV_RW_WRITE_DONE:
+        
+	; After writing, send CTRL_SYNC command to ensure data integrity.
+    ;ld   a, CTRL_SYNC
+    ;out  (PORT_CMD), a
+
+    ; Return success.
+    ld   a, 0
+
+    pop  hl
+    pop  de
+    pop  bc
+    pop  af
+    ret
 
 ;-----------------------------------------------------------------------------
 ;

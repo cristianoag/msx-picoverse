@@ -1,11 +1,12 @@
-// MSX IO ports
-#define PORT_CMD 0x11
-#define PORT_DAT 0x10
 
-// microSD card wiring
-#define PIN_MISO    31
-#define PIN_MOSI    30
-#define PIN_SCK     29
-#define PIN_CS      32
+#define PORT_CMD    11
+#define PORT_DATA   10
+
+// Nextor command definitions (must match the Nextor driver side)
+#define CMD_NEXTOR_READ_SECTOR  01
+#define CMD_NEXTOR_WRITE_SECTOR 02
+
+
+void io_main();
 
 

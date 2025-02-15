@@ -35,7 +35,8 @@ project(multirom C CXX ASM)
 pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
-add_executable(multirom io.c multirom.c )
+add_executable(multirom io.c multirom.c hw_config.c)
+add_subdirectory(lib/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/src build)
 
 pico_set_program_name(multirom "multirom")
 pico_set_program_version(multirom "0.1")
@@ -47,6 +48,7 @@ pico_enable_stdio_usb(multirom 1)
 # Add the standard library to the build
 target_link_libraries(multirom
         pico_stdlib
+        no-OS-FatFS-SD-SDIO-SPI-RPi-Pico
         pico_multicore
         )
 

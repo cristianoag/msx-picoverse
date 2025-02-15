@@ -86,9 +86,6 @@ int main() {
         panic("blocks[1] != \"World!\"\n");
     }
 
-
-
-
     printf("Goodbye, world!\n");
     for (;;);
 }
