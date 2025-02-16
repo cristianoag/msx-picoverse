@@ -11,8 +11,28 @@ uint8_t __not_in_flash_func(msx_read_data)(void)
     return (gpio_get_all() >> 16) & 0xFF;
 }
 
-void __not_in_flash_func(io_main)() {
+void __not_in_flash_func(io_main)(){
+    while (true) {
+        uint32_t gpiostates = gpio_get_all();
+        //bool iorq = !((gpiostates >> 28) & 1);  
+        bool iorq = !gpio_get(PIN_IORQ);
+        bool sltsl = !gpio_get(PIN_SLTSL);
+        if ((iorq) && (!sltsl)) { //test excluding ops with sltsl active
+            //uint32_t gpiostates = gpio_get_all();
+            uint8_t port = gpiostates & 0xFF;
+            uint8_t data = (gpiostates >> 16) & 0xFF;
+            if (port == PORT_CMD) {
+                printf("Command port called with command: %d\n", data);
+            } else if (port == PORT_DATA) {
+                printf("Data port called with data: 0x%02X\n", data);
+            }
+        }
+    }
+}
+
+void __not_in_flash_func(io_main2)() {
     sleep_ms(10000);
+
     printf("Initializing the microSD card\n");
 
     BYTE const pdrv = 0;                // Physical drive number, we only have one microSD
@@ -56,12 +76,12 @@ void __not_in_flash_func(io_main)() {
     while (true) {
         bool iorq = !gpio_get(PIN_IORQ);
         if (iorq) {
-            uint32_t gpiostates = gpio_get_all();
-            uint8_t port = gpiostates & 0xFF;
+            //uint32_t gpiostates = gpio_get_all();
+            uint8_t port = gpio_get_all() & 0xFF;
 
             if (port == PORT_CMD) {
                 // Read command from upper byte of GPIO states
-                uint8_t cmd = (gpiostates >> 16) & 0xFF;
+                uint8_t cmd = (gpio_get_all() >> 16) & 0xFF;
                 printf("Command port called with command: %d\n", cmd);
 
                 switch (cmd) {
@@ -89,12 +109,11 @@ void __not_in_flash_func(io_main)() {
                 // Check if we are still accumulating the 4-byte sector address.
                 if (waiting_for_address) {
                     // Each data port access gives one byte (read from upper part)
-                    uint8_t data = (gpiostates >> 16) & 0xFF;
+                    uint8_t data = (gpio_get_all() >> 16) & 0xFF;
                     sector_addr |= ((uint32_t)data << (8 * byte_count));
                     byte_count++;
                     printf("Received data byte %d: 0x%02X (sector_addr now 0x%08X)\n",
                            byte_count, data, sector_addr);
-
                     if (byte_count >= 4) {
                         waiting_for_address = false;
                         // Next, expect the sector count coming through the data port.
@@ -104,7 +123,7 @@ void __not_in_flash_func(io_main)() {
                 }
                 // Now, if we are waiting for the count (number of sectors)
                 else if (waiting_for_count) {
-                    uint8_t count = (gpiostates >> 16) & 0xFF;
+                    uint8_t count = (gpio_get_all() >> 16) & 0xFF;
                     waiting_for_count = false;
                     remaining_sectors = count;
 
@@ -132,7 +151,6 @@ void __not_in_flash_func(io_main)() {
                         // In read mode, each data port access sends one byte of the data.
                         uint8_t out_byte = block_buffer[transfer_idx++];
                         printf("Output data byte: 0x%02X\n", out_byte);
-
                         if (transfer_idx >= 512) {
                             remaining_sectors--;
                             sector_addr++; // Advance to next sector
@@ -152,10 +170,9 @@ void __not_in_flash_func(io_main)() {
                     }
                     else {
                         // Write mode: accumulate each incoming byte until one sector (512 bytes) is received.
-                        uint8_t in_byte = (gpiostates >> 16) & 0xFF;
+                        uint8_t in_byte = (gpio_get_all() >> 16) & 0xFF;
                         block_buffer[transfer_idx++] = in_byte;
                         printf("Received write data byte %d: 0x%02X\n", transfer_idx, in_byte);
-
                         if (transfer_idx >= 512) {
                             // Write the completed sector to disk.
                             DRESULT dr = disk_write(0, block_buffer, sector_addr, 1);

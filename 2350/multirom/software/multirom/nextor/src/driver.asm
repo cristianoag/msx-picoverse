@@ -4,18 +4,27 @@
 ; 
 ; Nextor 2.1 Device-Based Driver for PicoVerse
 ;
-; I/O ports used:
-;   0x11  = Command port
-;   0x10  = Data port
-; Command codes:
-CMD_NEXTOR_READ_SECTOR   EQU 01h     ; Command to read one sector
-CMD_NEXTOR_WRITE_SECTOR  EQU 02h     ; Command to write one sector
-PORT_CMD  EQU 11h
-PORT_DATA EQU 10h
 
 org 4100h
 
-ds 100h 
+; I/O ports used:
+;   21  = Command port
+;   20  = Data port
+PORT_CMD  EQU 21
+PORT_DATA EQU 20
+
+; Nextor Command codes:
+CMD_NEXTOR_READ_SECTOR  EQU 01     	; Command to read one sector
+CMD_NEXTOR_WRITE_SECTOR EQU 02   	; Command to write one sector
+
+; Bios Command codes:
+CHPUT 			EQU 00A2h
+CHGET 			EQU 009Fh
+BIOS_EXPTBL 	EQU 0xfcc1
+BIOS_INITXT  	EQU 0x006c
+BIOS_CALSLT   	EQU 0x001c
+
+ds 100h ;256 dummy bytes
 
 DRV_START:
 
@@ -283,7 +292,15 @@ DRV_TIMI:
 ;     get two allocated drives.)
 
 DRV_INIT:
-	xor	a 	; For drive-based drivers this would be number of units; here we return 0.
+
+	ld	de,strCopyRight
+	jp	printString
+
+    ; Send read command to test if device is available (TEST)
+    ld   a, 1
+    out  (21), a
+
+	xor	a
 	ld	hl,0
 	ret
 
@@ -420,14 +437,21 @@ if DRV_TYPE eq 1
 ;          B = Number of sectors actually read (in case of error only)
 
 DEV_RW:
+	
+	; Send read command to test if device is available
+    ld   a, CMD_NEXTOR_READ_SECTOR
+    out  (PORT_CMD), a
+	ret
 
-    ; Save flag state in A: 
-    ; Using "ld a,0" then "adc a,a" yields 0 if CF clear, 1 if CF set.
-    ld   a,0
-    adc  a,a        ; A = 0 if read, 1 if write
-    cp   0
-    jr   z, DEV_RW_READ_ENTRY
-    ;jr   DEV_RW_WRITE_ENTRY
+DEV_RW2:
+
+	; Save flag state in A: 
+	; Using "ld a,0" then "adc a,a" yields 0 if CF clear, 1 if CF set.
+	ld   a,0
+	adc  a,a        ; A = 0 if read, 1 if write
+	cp   0
+	jp   z, DEV_RW_READ_ENTRY
+	jp   DEV_RW_WRITE_ENTRY
 
 ;----------------------------------------
 ; Read Branch (CF=0)
@@ -607,7 +631,8 @@ DEV_RW_WRITE_DONE:
 ; provided, not the leftmost.
 
 DEV_INFO:
-	ld	a,1
+;ld	a,1
+	ld a, 0 
 	ret
 
 
@@ -641,7 +666,8 @@ DEV_INFO:
 ; DEV_STATUS itself. Please read the Driver Developer Guide for more info.
 
 DEV_STATUS:
-	xor	a
+	;xor	a
+	ld a, 1
 	ret
 
 
@@ -692,6 +718,25 @@ endif
 ;=====  END of DEVICE-BASED specific routines
 ;=====
 
+; ------------------------------------------------
+printString:
+; Prints an ASCII string that has the last bit7 set
+; Input   : DE = Pointer to the string
+; Modifies: AF, DE, EI 
+; ------------------------------------------------
+	ld	a,(de)
+	bit	7,a
+	res	7,a
+	call	CHPUT
+	ret	nz
+	inc	de
+	jr	printString
+
+
+strCopyright:
+	db	"PicoVerse Nextor 2.1 Driver",13,10
+	db	"(c) 2025 The Retro Hacker",13,10
+.end:
 
 ;-----------------------------------------------------------------------------
 ;
@@ -699,6 +744,8 @@ endif
 
 DRV_END:
 
-	ds	3DD0h-(DRV_END-DRV_START)
+	ds 3DD0h-(DRV_END-DRV_START)
+	;ds 3FD0h-(DRV_END-DRV_START)
+
 
 	end

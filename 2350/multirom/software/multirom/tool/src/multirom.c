@@ -97,6 +97,9 @@ uint8_t detect_rom_type(const char *filename, uint32_t size) {
     const char neo8_signature[] = "ROM_NEO8";
     const char neo16_signature[] = "ROM_NE16";
 
+    //printf("Detecting ROM type for [%s]\n", filename);
+    if (strcmp(filename, "nextor.rom") == 0) return 6; // Nextor ROM
+
     // Initialize weighted scores for different mapper types
     int konami_score = 0;
     int konami_scc_score = 0;

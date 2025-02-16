@@ -199,12 +199,12 @@ uint8_t detect_rom_type(const char *filename, uint32_t size) {
         }
          
         
-        /*
+        
         printf ("DEBUG: ascii8_score = %d\n", ascii8_score);
         printf ("DEBUG: ascii16_score = %d\n", ascii16_score);
         printf ("DEBUG: konami_score = %d\n", konami_score);
         printf ("DEBUG: konami_scc_score = %d\n\n", konami_scc_score);
-        */
+        
         
         if (ascii8_score==1) ascii8_score--;
 
@@ -296,7 +296,17 @@ int main(int argc, char *argv[])
     printf("(c) 2025 The Retro Hacker\n\n");
 
     if (argc < 2) {
-        printf("Usage: loadrom <romfile>\n");
+        printf("Usage: loadrom <romfile> [forced_mapper]\n");
+        printf("Possible forced mapper values:\n");
+        printf("  1: Plain16\n");
+        printf("  2: Plain32\n");
+        printf("  3: Konami SCC\n");
+        printf("  4: Linear0\n");
+        printf("  5: ASCII8\n");
+        printf("  6: ASCII16\n");
+        printf("  7: Konami\n");
+        printf("  8: NEO8\n");
+        printf("  9: NEO16\n");
         return 1;
     }
 
@@ -318,8 +328,6 @@ int main(int argc, char *argv[])
     // Copy the PICO firmware binary file to the final output file
     uint8_t buffer[1024];
     size_t bytes_read;
-    size_t total_bytes_written = 0;
-    size_t current_size = 0; // Current size of the output file
     uint32_t base_offset = 0x1d; // Base offset for the ROM file = 29B (one config record)
 
     while ((bytes_read = fread(buffer, 1, sizeof(buffer), input_file)) > 0) {
@@ -335,8 +343,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Write the ROM name to the configuration file
-    if ((strstr(argv[1], ".ROM") != NULL) || (strstr(argv[1], ".rom") != NULL)) // Check if it is a .ROM file
+    // Process only .rom/.ROM files
+    if ((strstr(argv[1], ".ROM") != NULL) || (strstr(argv[1], ".rom") != NULL))
     {
         // Get the size of the ROM file
         uint32_t rom_size = file_size(argv[1]);
@@ -348,17 +356,33 @@ int main(int argc, char *argv[])
         }
 
         // Detect the ROM type
-        uint8_t rom_type = detect_rom_type(argv[1], rom_size);
-        if (rom_type == 0) {
-            printf("Failed to detect the ROM type. Please check the ROM file.\n");
-            fclose(rom_file);
-            fclose(output_file);
-            return 1;
+        uint8_t rom_type = 0;
+        // Check if a forced mapper value was provided as a second parameter
+        if (argc >= 3) {
+            int forced_mapper = atoi(argv[2]);
+            // Validate forced value (adjust valid range as needed)
+            if (forced_mapper < 1 || forced_mapper > 9) {
+                printf("Forced mapper must be between 1 and 9.\n");
+                fclose(rom_file);
+                fclose(output_file);
+                return 1;
+            }
+            rom_type = forced_mapper;
+            printf("Forced ROM type: %s\n", rom_types[rom_type]);
+        }
+        else {
+            rom_type = detect_rom_type(argv[1], rom_size);
+            if (rom_type == 0) {
+                printf("Failed to detect the ROM type. Please check the ROM file.\n");
+                fclose(rom_file);
+                fclose(output_file);
+                return 1;
+            }
+            printf("Auto-detected ROM Type: %s\n", rom_types[rom_type]);
         }
 
         // Write the ROM name to the configuration file
         char rom_name[MAX_FILE_NAME_LENGTH] = {0};
-        uint32_t fl_offset = base_offset;
 
         // Extract the first part of the file name (up to the first '.ROM' or '.rom')
         char *dot_position = strstr(argv[1], ".ROM");
@@ -374,22 +398,20 @@ int main(int argc, char *argv[])
         } else {
             strncpy(rom_name, argv[1], MAX_FILE_NAME_LENGTH);
         }
-
         printf("ROM Name: %s\n", rom_name);
+
+        // Write the configuration record to the output file
         // Write the file name (20 bytes)
         fwrite(rom_name, 1, MAX_FILE_NAME_LENGTH, output_file);
-
-        printf("ROM Type: %s\n", rom_types[rom_type]);
         // Write the mapper (1 byte)
         fwrite(&rom_type, 1, 1, output_file);
-
-        printf("ROM Size: %u bytes\n", rom_size);
         // Write the file size (4 bytes)
         fwrite(&rom_size, 4, 1, output_file);
-
-        printf("Pico Flash Offset: 0x%08X\n", fl_offset);
         // Write the flash offset (4 bytes)
-        fwrite(&fl_offset, 4, 1, output_file);
+        fwrite(&base_offset, 4, 1, output_file);
+
+        printf("ROM Size: %u bytes\n", rom_size);
+        printf("Pico Flash Offset: 0x%08X\n", base_offset);
 
         // Write the ROM file to the final output file
         while ((bytes_read = fread(buffer, 1, sizeof(buffer), rom_file)) > 0) {
@@ -398,11 +420,10 @@ int main(int argc, char *argv[])
         fclose(rom_file);
         fclose(output_file);
 
-        //create the uf2 file
+        // Create the UF2 file
         create_uf2_file(COMBINED_FILE, UF2FILENAME);
 
-    } else
-    {
+    } else {
         perror("Invalid ROM file");
         fclose(rom_file);
         fclose(output_file);

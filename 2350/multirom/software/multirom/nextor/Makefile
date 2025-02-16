@@ -14,7 +14,7 @@ all: clean rom package
 	
 $(BUILD_DIR)/driver.bin: $(SRC_DIR)/driver.asm
 	@echo "Assembling $<..."
-	$(TOOLS_DIR)/$(SJASM) $< $@
+	$(TOOLS_DIR)/$(SJASM)  $< $@ 
 
 rom: $(BUILD_DIR)/driver.bin
 	@echo "Building ROM..."
@@ -22,6 +22,7 @@ rom: $(BUILD_DIR)/driver.bin
 
 package:
 	@echo "Creating package..."
+	@cp $(NEXTOR_ROM) ../tool/build/nextor.rom
 	@cp $(NEXTOR_ROM) $(DIST_DIR)/nextor.rom
 
 clean:
