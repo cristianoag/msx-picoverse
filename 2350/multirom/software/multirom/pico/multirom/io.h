@@ -1,9 +1,13 @@
 
-#define PORT_CMD    21
-#define PORT_DATA   20
+#define PORT_CONTROL   0x9E
+#define PORT_DATAREG   0x9F
 
-// Nextor command definitions (must match the Nextor driver side)
-#define CMD_NEXTOR_READ_SECTOR  01
-#define CMD_NEXTOR_WRITE_SECTOR 02
+#define SPI_CS     33
+#define SPI_SCK    34
+#define SPI_MOSI   35
+#define SPI_MISO   36
+#define SPI_PORT spi0
 
+void spi_initialize();
+uint8_t spi_handle_control_register(uint8_t write_value, bool is_write);
 void io_main();
