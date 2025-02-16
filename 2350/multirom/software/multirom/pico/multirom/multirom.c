@@ -95,7 +95,7 @@ uint8_t __not_in_flash_func(read_data_bus)(void) {
 
 // Function to write data to MSX data bus
 void __not_in_flash_func(write_data_bus)(uint8_t data) {
-    gpio_put_masked(0xFF0000, (uint32_t)data << 16);
+    gpio_put_masked(0xFF0000, data);
 }
 
 // read_ulong - Read a 4-byte value from the memory area

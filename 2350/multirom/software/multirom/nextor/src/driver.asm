@@ -1,4 +1,3 @@
-; MSX1 FPGA project
 ;
 ;Copyright (c) 2016 Fabio Belavenuto
 ;
@@ -345,9 +344,9 @@ DRV_INIT:
 	ld	de, strCartao
 	call	printString
 	in	a, (PORTSTATUS)	; Is there an SD Card in the slot?
-	push	af                  ; save A for printing
-	call	printDecToAscii     ; print the value of A in decimal
-	pop	af                   	; restore A
+	;push	af                  ; save A for printing
+	;call	printDecToAscii     ; print the value of A in decimal
+	;pop	af                   	; restore A
 	and	$2
 	jr	z, .naoVazio
 	ld	de, strVazio
@@ -357,7 +356,6 @@ DRV_INIT:
  ENDIF
 	jr	.wait
 .naoVazio:
-
 	call	detectaCartao	; tem cartao no slot, inicializar e detectar
 	jr	nc, .detectou ; RAMPA
 	call	desabilitaSDs
@@ -1415,6 +1413,7 @@ WAIT_RESP_NO_00:
 ; Nao destroi registradores
 ; ------------------------------------------------
 enableSD:
+
 	push	af
 	in	a, (PORTSPI)	; dummy read
 	ld	a, $FE

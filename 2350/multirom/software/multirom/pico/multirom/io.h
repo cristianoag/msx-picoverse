@@ -1,6 +1,6 @@
 
-#define PORT_CONTROL   0x9E
-#define PORT_DATAREG   0x9F
+#define PORT_CONTROL   0x9E //PORTCFG 
+#define PORT_DATAREG   0x9F //PORTSPI
 
 #define SPI_CS     33
 #define SPI_SCK    34
@@ -9,5 +9,5 @@
 #define SPI_PORT spi0
 
 void spi_initialize();
-uint8_t spi_handle_control_register(uint8_t write_value, bool is_write);
+uint8_t spi_handle_control_register();
 void io_main();
