@@ -6,9 +6,9 @@
 #include "io.h"
 
 // Global registers (emulating the Nextor driver's registers)
-volatile uint8_t control_reg = 0;  // Last value written to port 0x9E (control)
-volatile uint8_t data_reg = 0;     // Last SPI response from port 0x9F (data)
-volatile bool sd_changed = false;  // Disk-change flag (set externally when card is replaced)
+uint8_t control_reg = 0;  // Last value written to port 0x9E (control)
+uint8_t data_reg = 0;     // Last SPI response from port 0x9F (data)
+bool sd_changed = false;  // Disk-change flag (set externally when card is replaced)
 
 
 void spi_initialize() {
@@ -28,19 +28,6 @@ uint8_t spi_handle_control_register(uint8_t write_value, bool is_write) {
     return status;
 }
 
-uint8_t spi_handle_data_register(uint8_t write_value, bool is_write) {
-    static uint8_t spi_response = 0xFF;
-
-    if (is_write) {
-        uint8_t out_byte = write_value;
-        uint8_t in_byte;
-        spi_write_read_blocking(SPI_PORT, &out_byte, &in_byte, 1);
-        spi_response = in_byte;
-    }
-
-    return spi_response;
-}
-
 void __not_in_flash_func(io_main)(){
 
     spi_initialize();
@@ -53,7 +40,7 @@ void __not_in_flash_func(io_main)(){
         bool iorq  = !gpio_get(PIN_IORQ);
         bool sltsl = !gpio_get(PIN_SLTSL);
 
-        if ((iorq) && (!sltsl)) { 
+        if (iorq) { 
             uint8_t port = gpiostates & 0xFF;
             
             bool wr = !gpio_get(PIN_WR);
@@ -95,7 +82,7 @@ void __not_in_flash_func(io_main)(){
             else if (rd)
             {
                 // Read transaction: the MSX is reading from the port.
-                uint8_t out_val = 0;
+                uint8_t out_val;
 
                 if (port == 0x9E)
                 {

@@ -345,7 +345,10 @@ DRV_INIT:
 	ld	de, strCartao
 	call	printString
 	in	a, (PORTSTATUS)	; Is there an SD Card in the slot?
-	and	2
+	push	af                  ; save A for printing
+	call	printDecToAscii     ; print the value of A in decimal
+	pop	af                   	; restore A
+	and	$2
 	jr	z, .naoVazio
 	ld	de, strVazio
 	call	printString
@@ -354,6 +357,7 @@ DRV_INIT:
  ENDIF
 	jr	.wait
 .naoVazio:
+
 	call	detectaCartao	; tem cartao no slot, inicializar e detectar
 	jr	nc, .detectou ; RAMPA
 	call	desabilitaSDs
@@ -1800,6 +1804,8 @@ strSDV1:
 	db	"SDV1 - ",0
 strSDV2:
 	db	"SDV2 - ",0
+strEntrei:
+	db	"Entrei",13,10,0
 
 ; RAM area
 	org		$7000
