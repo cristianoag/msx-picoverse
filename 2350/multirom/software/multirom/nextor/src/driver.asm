@@ -4,11 +4,12 @@
 ; 
 ; -----------------------------------------------------------------------------
 
+; SJASMPLUS assembler instruction to create the binary file
 	output	"build/driver.bin"
 
+; This will be removed soon... 
 ; Uses HW (1) or SW (0) disk-change:
 HWDS = 1
-
 
 ;-----------------------------------------------------------------------------
 ;
@@ -19,7 +20,6 @@ HWDS = 1
 ;It is used by some of the kernel page 0 routines.
 
 CODE_ADD:	equ	0F84Ch
-
 
 ;-----------------------------------------------------------------------------
 ;
@@ -36,14 +36,12 @@ DRV_TYPE	equ	1
 ;   0 for no hot-plug support
 ;   1 for hot-plug support
 
-DRV_HOTPLUG	equ	1
+DRV_HOTPLUG	equ	0 ; This driver does not support hot-plugging at this moment
 
 ;Driver version
-
 VER_MAIN	equ	1
 VER_SEC		equ	0
 VER_REV		equ	0
-
 
 ;-----------------------------------------------------------------------------
 ;
@@ -76,7 +74,6 @@ EIPARM	equ	08Bh
 
 GSLOT1	equ	402Dh
 
-
 ;* This routine reads a byte from another bank.
 ;  Must be called by using CALBNK to the desired bank,
 ;  passing the address to be read in HL:
@@ -86,7 +83,6 @@ GSLOT1	equ	402Dh
 ;    call CALBNK
 
 RDBANK	equ	403Ch
-
 
 ;* This routine temporarily switches kernel main bank
 ;  (usually bank 0, but will be 3 when running in MSX-DOS 1 mode),
@@ -101,7 +97,6 @@ RDBANK	equ	403Ch
 
 CALLB0	equ	403Fh
 
-
 ;* Call a routine in another bank.
 ;  Must be used if the driver spawns across more than one bank.
 ;
@@ -113,7 +108,6 @@ CALLB0	equ	403Fh
 ;  Output: AF, BC, DE, HL, IX, IY returned from the called routine.
 
 CALBNK	equ	4042h
-
 
 ;* Get in IX the address of the SLTWRK entry for the slot passed in A,
 ;  which will in turn contain a pointer to the allocated page 3
@@ -130,18 +124,15 @@ CALBNK	equ	4042h
 
 GWORK	equ	4045h
 
-
 ;* This address contains one byte that tells how many banks
 ;  form the Nextor kernel (or alternatively, the first bank
 ;  number of the driver).
 
 K_SIZE	equ	40FEh
 
-
 ;* This address contains one byte with the current bank number.
 
 CUR_BANK	equ	40FFh
-
 
 ;-----------------------------------------------------------------------------
 ;
@@ -151,22 +142,22 @@ CUR_BANK	equ	40FFh
 NULL_MSG  equ     781Fh		;Null string (disk can't be formatted)
 SING_DBL  equ     7820h 	;"1-Single side / 2-Double side"
 
-
-; Enderecos ROM
-
-BIOS_INITXT	= $6C		; Inicializa SCREEN0
+; -----------------------------------------------------------------------------
+BIOS_INITXT	= $6C		; Screen0 initialization
 BIOS_CHPUT	= $A2		; A=char
-BIOS_CLS	= $C3		; Chamar com A=0
+BIOS_CLS	= $C3		; Call with A=0
 LINL40		= $F3AE		; Width
 LINLEN		= $F3B0
 
-; Enderecos SPI
+; IO Ports used by the driver
+; Details on the protocol available at: https://github.com/cristianoag/msx-picoverse/wiki/PicoVerse-2350-Nextor-Driver-Protocol
 
 PORTCFG		= $9E
 PORTSTATUS	= $9E
-PORTSPI		= $9F
+PORTDATA	= $9F
+PORTSPI		= $9F ; This line will be removed soon
 
-; Comandos SPI:
+; SPI Commands (deprecated, will be removed soon)
 CMD0	= 0  | $40
 CMD1	= 1  | $40
 CMD8	= 8  | $40
@@ -222,7 +213,7 @@ DRV_START:
 ;
 
 DRV_NAME:
-	db	"SD Driver"
+	db	"PicoVerse microSD Driver"
 	ds	32-($-DRV_NAME)," "
 
 
