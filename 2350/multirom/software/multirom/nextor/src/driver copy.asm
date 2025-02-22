@@ -1,8 +1,31 @@
-; -----------------------------------------------------------------------------
-; Nextor SD Driver for MSX PicoVerse
-; Copyright (C) 2025 The Retro Hacker
-; 
-; -----------------------------------------------------------------------------
+;
+;Copyright (c) 2016 Fabio Belavenuto
+;
+;This program is free software: you can redistribute it and/or modify
+;it under the terms of the GNU General Public License as published by
+;the Free Software Foundation, either version 3 of the License, or
+;(at your option) any later version.
+;
+;This program is distributed in the hope that it will be useful,
+;but WITHOUT ANY WARRANTY; without even the implied warranty of
+;MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;GNU General Public License for more details.
+;
+;You should have received a copy of the GNU General Public License
+;along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+; Technical info:
+; I/O port 0x9E: Interface status and card select register (read/write)
+;	<read>
+;	b0	: 1=SD disk was changed (If Hardware Disk Change is available)
+;	b1	: 0=SD card present
+;	b2	: 1=Write protecton enabled for SD card
+;	b3-7: Reserved for future use. Must be masked out from readings.
+;	<write>
+;	b0	: SD card chip-select (0=selected)
+; I/O port 0x9F: SPI data transfer (read/write)
+
+; Comments in Brazilian Portuguese, sorry :(
 
 	output	"build/driver.bin"
 
@@ -205,8 +228,7 @@ DRV_START:
 ;             (implements the DRV_CONFIG routine)
 
 
-	db	1+4
-
+	db	DRV_TYPE+(2*DRV_HOTPLUG)+4
 
 ;-----------------------------------------------------------------------------
 ;
@@ -303,75 +325,83 @@ DRV_TIMI:
 ;     get two allocated drives.)
 
 DRV_INIT:
-	; first nextor call
-	or		a			; first call
+	or	a		; primeira chamada do Nextor
 	;ld	hl,WRKAREA
-	ld		hl, 41		; no work area needed
-	ret 	z			
+	ld	hl, 41		; informar que nao precisamos de RAM
+	ret z
 
-	; second nextor call
-	call	BIOS_INITXT			; initialize screen
-	xor		a				
-	call	BIOS_CLS			; clear screen
-	ld		de, STRTITLE		; load title text
-	call	PRINTSTRING 		; print title
- 
-	ld 		de, STRCARD			; load card text
-	call 	PRINTSTRING			; print card text
 
-	ld		a, 0x01		
-	out		(PORTCFG), a		; attempt to initialize the SD card
-	ld 		bc, 0xFF
-	ld 		e, 2
-	call	DELAY				; wait to initialize the card and then read the status
-	in		a, (PORTSTATUS)		; read which will have the info if the card is detected or not
-	cp		0					; check if a is 0
-	jr		z, DETECTED			; if a is 0, jump to DETECTED
-	ld		de, STRNOTDETECTED	; if a is not 0, then we need to load the no card text
-	call	PRINTSTRING			; print the no card text
+; 2. chamada:
+	call	BIOS_INITXT	; inicializar tela
+	xor	a
+	call	BIOS_CLS	; limpar tela
+	ld	de, strTitulo	; imprimir titulo
+	call	printString
+ IF HWDS = 0
+	xor	a
+	ld	(WRKAREA.FLAGS), a
+ ENDIF
+	ld	de, strCartao
+	call	printString
+	in	a, (PORTSTATUS)	; Is there an SD Card in the slot?
+	;push	af                  ; save A for printing
+	;call	printDecToAscii     ; print the value of A in decimal
+	;pop	af                   	; restore A
+	and	$2
+	jr	z, .naoVazio
+	ld	de, strVazio
+	call	printString
+ IF HWDS = 0
+ 	call	marcaErroCartao
+ ENDIF
+	jr	.wait
+.naoVazio:
+	call	detectaCartao	; tem cartao no slot, inicializar e detectar
+	jr	nc, .detectou ; RAMPA
+	call	desabilitaSDs
+	ld	de, strNaoIdentificado
+	call	printString
+ IF HWDS = 1
 	ret
-
-DETECTED:
-	ld		de, STRDETECTED	; load the card detected text
-	call	PRINTSTRING		; print the card detected text
-
-	ld		a, 3			; send the command to return the manufacturer ID
-	out 	(PORTCFG), a	; send the command to the port
-
-	ld		a, '['
-	call	BIOS_CHPUT		; print the opening bracket
-
-	in		a, (PORTSTATUS)	; read the byte with the manufacturer ID
-	call	GETMANUFACTURER	; get the name of the manufacturer on the table
-	ex		de, hl			; exchange DE and HL
-	call	PRINTSTRING	
-
-	ld		a, ']'
-	call	BIOS_CHPUT		; print the closing bracket
-	ld		de, STRCRLF
-	call	PRINTSTRING		; print CRLF
-	ld 		bc, 0xFF
-	ld 		e, 2
-	call	DELAY			; wait to have the user reading the screen
-
+ ELSE
+	jp	marcaErroCartao	; slot vazio ou erro de deteccao, marcar nas flags
+ ENDIF
+.detectou:
+	call	calculaCIDoffset
+	;ld de, strEntrei
+	;call printString
+	ld	a, (ix+15)	; pegar byte SDV1 ou SDV2
+	ld	de, strSDV1	; e imprimir
+	or	a
+	jr	z, .pula1
+	ld	de, strSDV2
+.pula1:
+	call	printString
+	ld	a, '('
+	call	BIOS_CHPUT
+	ld	a, (ix)		; pegar byte do fabricante
+	call	printDecToAscii	; Imprimir Manufacturer ID
+	ld	a, ')'
+	call	BIOS_CHPUT
+	ld	a, ' '
+	call	BIOS_CHPUT
+	ld	a, (ix)		; pegar byte do fabricante
+	call	pegaFabricante	; achar nome do fabricante
+	ex	de, hl
+	call	printString	; e imprimir
+	ld	de, strCrLf
+	call	printString
+	ld	bc, 0
+	ld	e, 2
+.wait:				; esperar um pouco para dar tempo
+	nop			; de ler mensagens
+	dec	bc
+	ld	a, c
+	or	b
+	jr	nz, .wait
+	dec	e
+	jr	nz, .wait
 	ret
-
-; -----------------------------------------------------------------------------
-; DELAY LOOP
-; set the bc and e registers with appropriate values before entering the loop. 
-; The values you choose will determine the duration of the delay.
-; The loop will continue until both bc and e reach zero.
-;-----------------------------------------------------------------------------
-DELAY:
-    nop             
-    dec 	bc
-    ld 		a, c
-    or 		b
-    jr 		nz, DELAY
-    dec 	e
-    jr 		nz, DELAY
-    ret
-
 
 
 ;-----------------------------------------------------------------------------
@@ -467,11 +497,29 @@ DRV_DIRECT4:
 ;   Output:
 ;     B = Device index
 ;     C = LUN index
+
+
 DRV_CONFIG:
+        ;ld a,1
+        ;ret
 
-    ld 	a,1
-    ret
+        dec a
+        jr z,DRV_CONFIG_1
+        dec a
+        jr z,DRV_CONFIG_2
+        ld a,1
+        ret
 
+DRV_CONFIG_1:
+        ld b,2
+        or a
+        ret
+
+DRV_CONFIG_2:
+        ld b,1
+        ld c,1
+        xor a
+        ret
 
 ;=====
 ;=====  BEGIN of DEVICE-BASED specific routines
@@ -599,103 +647,142 @@ escrita:
 	ret
 
 ;-----------------------------------------------------------------------------
-; Device information gathering - Extended DEV_INFO implementation
 ;
-; Input:   A = Device index, only device 1 is supported
-;          B = Information index:
-;              0: Basic information
-;              1: Manufacturer name string
-;              2: Device name string
-;              3: Serial number string
-;          HL = Pointer to a buffer in RAM
-; Output:  A = Error code:
-;              0: Ok
-;              1: Device not available or invalid device index
-;              2: Information not available, or invalid information index
-;-----------------------------------------------------------------------------
+; Device information gathering
+;
+;Input:   A = Device index, 1 to 7
+;         B = Information to return:
+;             0: Basic information
+;             1: Manufacturer name string
+;             2: Device name string
+;             3: Serial number string
+;         HL = Pointer to a buffer in RAM
+;Output:  A = Error code:
+;             0: Ok
+;             1: Device not available or invalid device index
+;             2: Information not available, or invalid information index
+;         When basic information is requested,
+;         buffer filled with the following information:
+;
+;+0 (1): Numer of logical units, from 1 to 7. 1 if the device has no logical
+;        units (which is functionally equivalent to having only one).
+;+1 (1): Device flags, always zero in Beta 2.
+;
+; The strings must be printable ASCII string (ASCII codes 32 to 126),
+; left justified and padded with spaces. All the strings are optional,
+; if not available, an error must be returned.
+; If a string is provided by the device in binary format, it must be reported
+; as an hexadecimal, upper-cased string, preceded by the prefix "0x".
+; The maximum length for a string is 64 characters;
+; if the string is actually longer, the leftmost 64 characters
+; should be provided.
+;
+; In the case of the serial number string, the same rules for the strings
+; apply, except that it must be provided right-justified,
+; and if it is too long, the rightmost characters must be
+; provided, not the leftmost.
 
 DEV_INFO:
-	cp 	1
-	jr 	nz, DEV_INFO_ERROR      ; Only device index 1 supported
+	inc	b
+	cp	2		; somente 1 dispositivo
+	jr	c, .ok
+.saicomerro:
+	ld	a, 1		; informar erro
+	ret
+.ok:
+ IF HWDS = 0
+	call	checkSWDS
+	jr	c, .saicomerro
+ ENDIF
+	djnz	.naoBasic
+; Basic information:
+	ld	a, 1		; 1 logical unit somente
+	ld	(hl), a
+	xor	a		; reservado, deve ser 0
+	inc	hl
+	ld	(hl), a
+	ret			; retorna com A=0 (OK)
 
-	ld 	a, b                   	; Check the requested information index
-	cp 	0
-	jr 	z, DEV_INFO_BASIC      	; If 0, return basic information
-	cp 	1
-	jr 	z, DEV_INFO_MANUFACTURER
-	cp 	2
-	jr 	z, DEV_INFO_DEVICENAME
-	cp 	3
-	jr 	z, DEV_INFO_SERIAL
-
-	ld 	a, 2                   	; Otherwise, error code 2: Information not available
+.naoBasic:
+	push	hl
+	call	calculaCIDoffset	; calculamos em IX a posicao correta do offset CID dependendo do cartao atual
+	pop	hl
+	djnz	.naoManuf
+; Manufacturer Name:
+	push	hl		; salva ponteiro do buffer
+	ld	b, 64		; preenche buffer com espaco
+	ld	a, ' '
+.loop1:
+	ld	(hl), a
+	inc	hl
+	djnz	.loop1
+	pop	de		; recuperamos ponteiro do buffer em DE
+	ld	a, '('		; colocamos (xx) xxx no buffer
+	ld	(de), a
+	inc	de
+	ld	a, (ix)		; byte do fabricante
+	call	DecToAscii
+	ld	a, ')'
+	ld	(de), a
+	inc	de
+	ld	a, ' '
+	ld	(de), a
+	inc	de
+	ld	a, (ix)		; byte do fabricante
+	call	pegaFabricante	; pegar nome do fabricante em HL
+	ldir			; e colocar no buffer
 	ret
 
-DEV_INFO_BASIC:
-	; Fill buffer with basic information:
-	; +0: Number of logical units (1)
-	; +1: Device flags (0)
-	ld 		(hl), 1               ; One logical unit
-	inc 	hl
-	xor 	a                     ; Set device flags = 0
-	ld 		(hl), a
-	xor 	a                     ; Return A=0 to indicate success
+.naoManuf:
+	djnz	.naoProduct
+; Product Name:
+	push	hl		; guarda HL que aponta para buffer do Nextor
+	push	ix
+	pop	hl		; joga IX para HL
+	ld	d, 0
+	ld	e, 3		; adiciona offset do productname em HL
+	add	hl, de
+	pop	de		; recupera buffer do Nextor em DE
+	ld	bc, 5		; 5 caracteres
+	ldir			; copia nome do produto
+	ex	de, hl		; troca DE com HL, agora HL aponta para Buffer do nextor atualizado
+	ld	b, 59		; Coloca espaco no restante do buffer
+	ld	a, ' '
+.loop2:
+	ld	(hl), a
+	inc	hl
+	djnz	.loop2
+	xor	a		; informar sem erros
 	ret
 
-DEV_INFO_MANUFACTURER:
-	; Return a manufacturer name string in HL
-	ld		a, 3			; send the command to return the manufacturer ID
-	out 	(PORTCFG), a	; send the command to the config port
-	in		a, (PORTSTATUS)	; read the byte with the manufacturer ID
-	call	GETMANUFACTURER	; get the name of the manufacturer on the table
-							; GETMANUFACTURER returns HL pointing to the string buffer
-	ret
-
-DEV_INFO_DEVICENAME:
-	; Return a device name string (not implemented yet)
-	; it is returning a fixed string "microSD card"
-	ld 		de, STR_DEVICENAME   ; DE points to null-terminated device name string
-	ex		de, hl				; HL points to the buffer
-	ret
-
-DEV_INFO_SERIAL:
-	; Return a serial number string
-	ld 		a, 4            ; send the command to return the serial number (0x04)
-	out 	(PORTCFG), a    ; send the command to the config port
-	in		a, (PORTSTATUS)    ; read the byte with the serial number
-
-	call 	HEXTOASCII      ; convert the serial number byte to ASCII
-							; Now DE points to the converted ASCII characters
-
-	; Prepare the destination buffer starting with "0x"
-	ld		hl, SERIAL_BUFFER ; HL will point to the start of the string buffer
-	ld		(hl), '0'
-	inc		hl
-	ld		(hl), 'x'
-	inc		hl
-
-	; Copy the converted ASCII characters from DE to the buffer at HL
-	ld		b, 2              ; copy 2 bytes (hexadecimal representation for one byte)
-.copy_loop:
-	ld		a, (de)
-	ld		(hl), a
-	inc		hl
-	inc		de
-	djnz	.copy_loop
-
-	; HL now points just after the concatenated string in SERIAL_BUFFER;
-
-	; we can adjust HL to point to the beginning by reloading the address.
-	ld		hl, SERIAL_BUFFER ; HL points to the start of the string buffer as required
-
-	ret
-
-; Define a buffer for the final microSD card serial string
-SERIAL_BUFFER:
-	ds		4
-
-DEV_INFO_ERROR:
-	ld a, 1       ; Error: device index not valid
+.naoProduct:
+; Serial:
+	ld	a, '0'		; Coloca prefixo "0x"
+	ld	(hl), a
+	inc	hl
+	ld	a, 'x'
+	ld	(hl), a
+	inc	hl
+	push	hl		; guarda HL que aponta para buffer do Nextor
+	push	ix
+	pop	hl		; joga IX para HL
+	ld	d, 0
+	ld	e, 9		; adiciona offset do productname em HL
+	add	hl, de
+	pop	de		; recupera buffer do nextor em DE
+	ld	b, 4		; 4 bytes do serial
+.loop3:
+	ld	a, (hl)
+	call	HexToAscii	; converter HEXA para ASCII
+	inc	hl
+	djnz	.loop3
+	ld	b, 54		; Coloca espaco no restante
+	ld	a, ' '
+.loop4:
+	ld	(de), a
+	inc	de
+	djnz	.loop4
+	xor	a		; informar sem erros
 	ret
 
 ;-----------------------------------------------------------------------------
@@ -728,7 +815,42 @@ DEV_INFO_ERROR:
 ; DEV_STATUS itself. Please read the Driver Developer Guide for more info.
 
 DEV_STATUS:
-	xor	a
+	cp	2		; 1 dispositivo somente
+	jr	nc, .saicomerro
+	dec	b		; 1 logical unit somente
+	jr	nz, .saicomerro
+	ld	(WRKAREA.NUMSD), a
+ IF HWDS = 0
+	ld	a, (WRKAREA.FLAGS)
+	and	1
+	jr	z, .semMudanca
+	call	detectaCartao	; try redetect
+	jr	c, .cartaoComErro
+	ld	a, (WRKAREA.FLAGS)
+	and	$FE
+	ld	(WRKAREA.FLAGS), a
+	jr	.comMudanca2
+ ELSE
+	in	a, (PORTSTATUS)	; destructive read
+	bit	1, a
+	jr	nz, .saicomerro	; no
+	bit	0, a		; changed?
+	jr	nz, .comMudanca	; no
+ ENDIF
+.semMudanca:
+	ld	a, 1		; informa ao Nextor que cartao esta OK e nao mudou
+	ret
+.comMudanca:
+	call	detectaCartao	; try redetect
+.comMudanca2
+	ld	a, 2		; informa ao Nextor que cartao esta OK e mudou
+	ret
+ IF HWDS = 0
+.cartaoComErro:
+	call	marcaErroCartao	; marcar erro do cartao nas flags
+ ENDIF
+.saicomerro:
+	xor	a		; informa erro
 	ret
 
 ;-----------------------------------------------------------------------------
@@ -884,6 +1006,161 @@ calculaBLOCOSoffset:
 	pop	ix		; Vamos colocar HL em IX
 	ret
 
+
+;------------------------------------------------
+; Minhas funcoes para cartao SD
+;------------------------------------------------
+
+;------------------------------------------------
+; Processo de inicializacao e deteccao do cartao.
+; Detecta se cartao responde, qual versao (SDV1
+; ou SDV2), faz a leitura do CSD e CID e calcula
+; o numero de blocos do cartao, colocando o CID
+; e total de blocos no buffer correto dependendo
+; do cartao 1 ou 2.
+; Retorna erro no carry. Se for 0 indica deteccao
+; com sucesso.
+; Destroi todos os registradores
+;------------------------------------------------
+detectaCartao:
+	call	iniciaSD	; manda pulsos de clock e comandos iniciais
+	ret	c		; retorna se erro
+	call	testaSDCV2	; tenta inicializar um cartao SDV2
+	ret	c
+	ld	hl, WRKAREA.BCSD
+	ld	a, CMD9		; ler CSD
+	call	lerBlocoCxD
+	ret	c
+	call	calculaCIDoffset	; calculamos em IX e HL a posicao correta do offset CID dependendo do cartao atual
+	ld	a, CMD10	; ler CID
+	call	lerBlocoCxD
+	ret	c
+	ld	a, CMD58	; ler OCR
+	ld	de, 0
+	call	SD_SEND_CMD_2_ARGS_GET_R3	; enviar comando e receber resposta tipo R3
+	ret	c
+	ld	a, b		; testa bit CCS do OCR que informa se cartao eh SDV1 ou SDV2
+	and	$40
+	ld	(ix+15), a	; salva informacao da versao do SD (V1 ou V2) no byte 15 do CID
+	call	z, mudarTamanhoBlocoPara512		; se bit CCS do OCR for 1, eh cartao SDV2 (Block address - SDHC ou SDXD)
+	ret	c		; e nao precisamos mudar tamanho do bloco para 512
+	call	desabilitaSDs
+				; agora vamos calcular o total de blocos dependendo dos dados do CSD
+	call	calculaBLOCOSoffset	; calcular em IX e HL o offset correto do buffer que armazena total de blocos
+	ld	hl, WRKAREA.BCSD+5
+	ld	a, (WRKAREA.BCSD)
+	and	$C0		; testa versao do registro CSD
+	jr	z, .calculaCSD1
+	cp	$40
+	;jr	z, .calculaCSD2
+	jr .calculaCSD2
+	scf			; versao do registro CSD nao reconhecida, informa erro na deteccao
+	ret
+
+; -----------------------------------
+; Registro CSD versao 1, calcular da
+; maneira correta para a versao 1
+; -----------------------------------
+.calculaCSD1:
+	ld	a, (hl)
+	and	$0F		; isola READ_BL_LEN
+	push	af
+	inc	hl
+	ld	a, (hl)		; 2 primeiros bits de C_SIZE
+	and	3
+	ld	d, a
+	inc	hl
+	ld	e, (hl)		; 8 bits de C_SIZE (DE contem os primeiros 10 bits de C_SIZE)
+	inc	hl
+	ld	a, (hl)
+	and	$C0		; 2 ultimos bits de C_SIZE
+	add	a, a		; rotaciona a esquerda
+	rl	e		; rotaciona para DE
+	rl	d
+	add	a, a		; mais uma rotacao
+	rl	e		; rotaciona para DE
+	rl	d
+	inc	de		; agora DE contem todos os 12 bits de C_SIZE, incrementa 1
+	inc	hl
+	ld	a, (hl)		; proximo byte
+	and	3		; 2 bits de C_SIZE_MUL
+	ld	b, a		; B contem os 2 bits de C_SIZE_MUL
+	inc	hl
+	ld	a, (hl)		; proximo byte
+	and	$80		; 1 bit de C_SIZE_MUL
+	add	a, a		; rotaciona para esquerda jogando no carry
+	rl	b		; rotaciona para B
+	inc	b		; agora B contem os 3 bits de C_SIZE_MUL
+	inc	b		; faz B = C_SIZE_MUL + 2
+	pop	af		; volta em A o READ_BL_LEN
+	add	a, b		; A = READ_BL_LEN + (C_SIZE_MUL+2)
+	ld	bc, 0
+	call	.eleva2
+	ld	e, d		; aqui temos 32 bits (BC DE) com o tamanho do cartao
+	ld	d, c		; ignoramos os 8 ultimos bits em E, fazemos BC DE => 0B CD (divide por 256)
+	ld	c, b
+	ld	b, 0
+	srl	c		; rotacionamos a direita o C, carry = LSB (divide por 2)
+	rr	d		; rotacionamos D e E
+	rr	e		; no final BC DE contem tamanho do cartao / 512 = numero de blocos
+.salvaBlocos:
+	ld	(ix+2), c	; colocar no buffer BLOCOS correto a quantidade de blocos
+	ld	(ix+1), d	; que o cartao (1 ou 2) tem
+	ld	(ix), e
+	xor	a		; limpa carry
+	ret
+
+.eleva2:			; aqui temos: A = (READ_BL_LEN + (C_SIZE_MUL+2))
+				; BC = 0
+				; DE = C_SIZE
+	sla	e		; rotacionamos C_SIZE por 'A' vezes
+	rl	d
+	rl	c
+	rl	b
+	dec	a		; subtraimos 1
+	jr	nz, .eleva2
+	ret			; em BC DE temos o tamanho do cartao (bytes) em 32 bits
+
+; -----------------------------------
+; Registro CSD versao 2, calcular da
+; maneira correta para a versao 2
+; -----------------------------------
+.calculaCSD2:
+	inc	hl		; HL ja aponta para BCSD+5, fazer HL apontar para BCSD+7
+	inc	hl
+	ld	a, (hl)
+	and	$3F
+	ld	c, a
+	inc	hl
+	ld	d, (hl)
+	inc	hl
+	ld	e, (hl)
+	call	.inc32		; soma 1
+	call	.desloca32	; multiplica por 512
+	call	.rotaciona24	; multiplica por 2
+	jp	.salvaBlocos
+
+.inc32:
+	inc	e
+	ret	nz
+	inc	d
+	ret	nz
+	inc	c
+	ret	nz
+	inc	b
+	ret
+
+.desloca32:
+	ld	b, c
+	ld	c, d
+	ld	d, e
+	ld	e, 0
+.rotaciona24:
+	sla	d
+	rl	c
+	rl	b
+	ret
+
 ; ------------------------------------------------
 ; Setar o tamanho do bloco para 512 se o cartao
 ; for SDV1
@@ -893,6 +1170,88 @@ mudarTamanhoBlocoPara512:
 	ld	bc, 0
 	ld	de, 512
 	jp	SD_SEND_CMD_GET_ERROR
+
+; ------------------------------------------------
+; Tenta inicializar um cartao SDV2, se houver erro
+; o cartao deve ser SDV1
+; ------------------------------------------------
+testaSDCV2:
+	ld	a, CMD8
+	ld	de, $1AA
+	call	SD_SEND_CMD_2_ARGS_GET_R3
+	ld	hl, SD_SEND_CMD1	; HL aponta para rotina correta
+	jr	c, .pula	; cartao recusou CMD8, enviar comando CMD1
+	ld	hl, SD_SEND_ACMD41	; cartao aceitou CMD8, enviar comando ACMD41
+.pula:
+	ld	bc, 120		; 120 tentativas
+.loop:
+	push	bc
+	call	.jumpHL		; chamar rotina correta em HL
+	pop	bc
+	ret	nc
+	djnz	.loop
+	dec	c
+	jr	nz, .loop
+	scf
+	ret
+.jumpHL:
+	jp	(hl)		; chamar rotina correta em HL
+
+; ------------------------------------------------
+; Enviar comando ACMD41
+; ------------------------------------------------
+SD_SEND_ACMD41:
+	ld	a, CMD55
+	call	SD_SEND_CMD_NO_ARGS
+	ld	a, ACMD41
+	ld	bc, $4000
+	ld	d, c
+	ld	e, c
+	jr	SD_SEND_CMD_GET_ERROR
+
+; ------------------------------------------------
+; Ler registro CID ou CSD, o comando vem em A
+; ------------------------------------------------
+lerBlocoCxD:
+	call	SD_SEND_CMD_NO_ARGS
+	ret	c
+	call	WAIT_RESP_FE
+	ret	c
+	ld	c, PORTSPI
+	ld	b, 16
+	inir
+	nop
+	in	a, (PORTSPI)
+	nop
+	in	a, (PORTSPI)	; byte de resposta
+	or	a
+	jr	desabilitaSDs
+
+
+; ------------------------------------------------
+; Algoritmo para inicializar um cartao SD
+; Destroi AF, B, DE
+; ------------------------------------------------
+
+iniciaSD:
+        ld              a, $FF
+        out             (PORTCFG), a                            ; disable SD card
+        ld              b, 10                                           ; send 80 clock pulses with SD card not selected
+.loop:
+        out             (PORTSPI), a
+        djnz    .loop
+        call    enableSD                                        ; enable actual SD card
+        ld              b, 8                                            ; 8 tries for CMD0
+SD_SEND_CMD0:
+        ld              a, CMD0                                         ; first command: CMD0
+        ld              de, 0
+        push    bc
+        call    SD_SEND_CMD_2_ARGS_TEST_BUSY
+        pop             bc
+        ret     nc                                                              ; SD card accepts CMD0, return
+        djnz    SD_SEND_CMD0
+        scf                                                                     ; SD card not accepts CMD0, error
+        ; fall throw
 
 ; ------------------------------------------------
 ; Desabilitar (de-selecionar) todos os cartoes
@@ -1243,13 +1602,13 @@ blocoParaByte:
 ; Imprime string na tela apontada por DE
 ; Destroi todos os registradores
 ; ------------------------------------------------
-PRINTSTRING:
+printString:
 	ld	a, (de)
 	or	a
 	ret	z
 	call	BIOS_CHPUT
 	inc	de
-	jr	PRINTSTRING
+	jr	printString
 
 
 ; ------------------------------------------------
@@ -1291,7 +1650,7 @@ DecToAscii:
 ; buffer apontado por DE
 ; Destroi AF, C, DE
 ; ------------------------------------------------
-HEXTOASCII:
+HexToAscii:
 	ld	c, a
 	rra
 	rra
@@ -1310,81 +1669,80 @@ HEXTOASCII:
 	ret
 
 ; ------------------------------------------------
-; Converts the byte in A to a decimal string and
-; prints it on the screen
-; Destroys registers: AF, BC, HL, DE
+; Converte o byte em A para string em decimal e
+; imprime na tela
+; Destroi AF, BC, HL, DE
 ; ------------------------------------------------
-PRINTDECTOASCII:
-	ld		h, 0
-	ld		l, a		; copy A into HL
-	ld		b, 1		; flag to indicate that leading zeros should be trimmed
-	ld		de, -100	; hundreds
+printDecToAscii:
+	ld	h, 0
+	ld	l, a		; copiar A para HL
+	ld	b, 1		; flag para indicar que devemos cortar os zeros a esquerda
+	ld	de, -100	; centenas
 	call	.num1
-	ld		e, -10		; tens
+	ld	e, -10		; dezenas
 	call	.num1
-	ld		b, 2		; units: should display 0 if zero and do not trim it
-	ld		e, -1		; units
+	ld	b, 2		; unidade deve exibir 0 se for zero e nao corta-lo
+	ld	e, -1		; unidades
 .num1:
-	ld		a, '0'-1
+	ld	a, '0'-1
 .num2:
-	inc		a			; count the ASCII value from '0' to '9'
-	add		hl, de		; add the negative value
-	jr		c, .num2	; not zeroed yet
-	sbc		hl, de		; restore the original value
-	djnz	.notzero	; if the trim flag indicates not to trim, jump
-	cp		'0'			; we should trim leading zeros. Is it zero?
-	jr		nz, .notzero
-	inc		b			; if it is zero, do not print and restore the flag
+	inc	a		; contar o valor em ascii de '0' a '9'
+	add	hl, de		; somar com negativo
+	jr	c, .num2	; ainda nao zeramos
+	sbc	hl, de		; retoma valor original
+	djnz	.naozero	; se flag do corte do zero indicar para nao cortar, pula
+	cp	'0'		; devemos cortar os zeros a esquerda. Eh zero?
+	jr	nz, .naozero
+	inc	b		; se for zero, nao imprimimos e voltamos a flag
 	ret
-.notzero:
-	push	hl		; not zero or some other number, so print
+.naozero:
+	push	hl		; nao eh zero ou eh outro numero, imprimir
 	push	bc
 	call	BIOS_CHPUT
-	pop		bc
-	pop		hl
+	pop	bc
+	pop	hl
 	ret
 
 ; ------------------------------------------------
-; Search for the manufacturer's name in a table.
-; A contains the manufacturer's byte.
-; Returns HL pointing to the manufacturer's buffer
-; and BC with the length of the text.
-; Destroys AF, BC, HL
+; Procura pelo nome do fabricante em uma tabela.
+; A contem o byte do fabricante
+; Devolve HL apontando para o buffer do fabricante
+; e BC com o comprimento do texto
+; Destroi AF, BC, HL
 ; ------------------------------------------------
-GETMANUFACTURER:
-	ld		c, a
-	ld		hl, TBLMANUFACTURERS
+pegaFabricante:
+	ld	c, a
+	ld	hl, tblFabricantes
 
 .loop:
-	ld		a, (hl)
-	inc		hl
-	cp		c
-	jr		z, .found
-	or		a
-	jr		z, .found
+	ld	a, (hl)
+	inc	hl
+	cp	c
+	jr	z, .achado
+	or	a
+	jr	z, .achado
 	push	bc
-	call	.found
-	add		hl, bc
-	inc		hl
-	pop		bc
-	jr		.loop
+	call	.achado
+	add	hl, bc
+	inc	hl
+	pop	bc
+	jr	.loop
 
-.found:
-	ld		c, 0
+.achado:
+	ld	c, 0
 	push	hl
-	xor		a
+	xor	a
 .loop2:
-	inc		c
-	inc		hl
-	cp		(hl)
-	jr		nz, .loop2
-	pop		hl
-	ld		b, 0
+	inc	c
+	inc	hl
+	cp	(hl)
+	jr	nz, .loop2
+	pop	hl
+	ld	b, 0
 	ret
 
 ; ---------------------------------------------------------------------------
-
-TBLMANUFACTURERS:
+tblFabricantes:
 	db	1
 	db	"Panasonic",0
 	db	2
@@ -1426,27 +1784,29 @@ TBLMANUFACTURERS:
 	db	137
 	db	"L.Data",0
 	db	0
-	db	"Generic",0
+	db	"Generico",0
 
 ; ------------------------------------------------
-STRTITLE:
+strTitulo:
 	db	"MSX PICOVERSE 2350",13,10
 	db	"SD Nextor Driver Version "
 	db	VER_MAIN + $30, '.', VER_SEC + $30, '.', VER_REV + $30
 	db	13, 10
 	db	"Copyright (c) 2025 - The Retro Hacker",13,10
-STRCRLF:
+strCrLf:
 	db	13,10,0
-STRCARD:
+strCartao:
 	db	"Card: ",0
-STRNOTDETECTED:
-	db	"Not detected!",13,10,0
-STRDETECTED:
-	db	"Detected ",0
+strVazio:
+	db	"No card!",13,10,0
+strNaoIdentificado:
+	db	"No identification!",13,10,0
+strSDV1:
+	db	"SDV1 - ",0
+strSDV2:
+	db	"SDV2 - ",0
 strEntrei:
 	db	"Entrei",13,10,0
-STR_DEVICENAME:
-	db "microSD card",0
 
 ; RAM area
 	org		$7000

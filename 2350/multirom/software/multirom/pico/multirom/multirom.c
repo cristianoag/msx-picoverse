@@ -727,7 +727,7 @@ void __no_inline_not_in_flash_func(loadrom_neo16)(uint32_t offset)
 // Main function running on core 0
 int main()
 {
-    set_sys_clock_khz(285000, true);     // Set system clock to 270MHz
+    set_sys_clock_khz(280000, true);     // Set system clock to 270MHz
     stdio_init_all();     // Initialize stdio
 
     multicore_launch_core1(io_main);    // Launch core 1
