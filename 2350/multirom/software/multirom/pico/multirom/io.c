@@ -121,6 +121,34 @@ void __not_in_flash_func(io_main)(){
                             ctrl_reg = 0xFF; // Set control register to error state
                         }
                     }
+
+                    // 0x05 = SD card capacity (number of blocks), returned one byte per call (little-endian)
+                    if (busdata == 0x05) {
+                        // Use static variables to keep the state across calls.
+                        static int capacity_byte_index = 0;
+                        static DWORD capacity_cached = 0;
+
+                        if (!(ds & STA_NOINIT)) {
+                            if (capacity_byte_index == 0) {
+                                // On the first call, query the SD card capacity.
+                                DRESULT dr = disk_ioctl(pdrv, GET_SECTOR_COUNT, &capacity_cached);
+                                printf("MSX: SD card capacity: %d\n", capacity_cached);
+                                if (dr != RES_OK) {
+                                    // If there is an error, signal error and reset index.
+                                    ctrl_reg = 0xFF;
+                                    capacity_byte_index = 0;
+                                    break;
+                                }
+                            }
+                            // Return one byte of the capacity (little-endian order)
+                            ctrl_reg = (uint8_t)((capacity_cached >> (capacity_byte_index * 8)) & 0xFF);
+                            capacity_byte_index = (capacity_byte_index + 1) % 4;
+                        }
+                        else {
+                            // SD card not present or not initialized
+                            ctrl_reg = 0xFF;
+                        }
+                    }
                 }
                 else if (port == 0x9F) // Port 0x9F (Data Write): Send the byte to the media
                 {

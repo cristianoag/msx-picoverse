@@ -722,6 +722,7 @@ DEV_STATUS:
 	xor	a
 	ret
 
+
 ;-----------------------------------------------------------------------------
 ;
 ; Obtain logical unit information
@@ -749,6 +750,8 @@ DEV_STATUS:
 ;               be write protected or write enabled is not considered
 ;               to be read-only.
 ;        bit 2: 1 if the LUN is a floppy disk drive.
+;        bit 3: 1 if this LUN shouldn't be used for automapping.
+;        bits 4-7: must be zero.
 ;+8 (2): Number of cylinders
 ;+10 (1): Number of heads
 ;+11 (1): Number of sectors per track
@@ -757,53 +760,45 @@ DEV_STATUS:
 ; For other types of device, these fields must be zero.
 
 LUN_INFO:
-	cp	2		; somente 1 dispositivo
-	jr	nc, .saicomerro
-	dec	b		; somente 1 logical unit
-	jr	z, .ok
-.saicomerro:
-	ld	a, 1		; informar erro
+	cp      2           ; only one device supported
+	jr      nc, DEV_STATUS_ERROR
+
+	xor     a
+	ld      (hl), a     ; +0: Medium type = 0 (block device)
+	inc     hl
+	ld      (hl), a     ; +1: Low byte of sector size (0x00)
+	inc     hl
+	ld      a, 2
+	ld      (hl), a     ; +2: High byte of sector size (0x02 -> 512 bytes)
+	inc     hl
+
+	; next four commands bring readings from PORTSTATUS with four bytes with the number of sectors 
+	; in little-endian format
+    ld      b, 4             ; Set loop counter for 4 sector bytes
+
+SECTOR_READ_LOOP:
+    ld      a, 5             ; Reload A with command 5
+    out     (PORTCFG), a     ; Send the command
+    in      a, (PORTSTATUS)  ; Read sector byte
+    ld      (hl), a          ; Store it
+    inc     hl
+    djnz    SECTOR_READ_LOOP ; Loop until all 4 bytes are read
+	
+	xor	 	a
+	ld      (hl), a     ; +7: Flags = device is not removable
+	inc     hl
+	xor     a
+	ld      (hl), a     ; +8: Number of cylinders = 0 (not applicable)
+	inc     hl
+	ld      (hl), a     ; +9: Number of heads = 0
+	inc     hl
+	ld      (hl), a     ; +10: Sectors per track = 0
 	ret
-.ok:
- IF HWDS = 0
-	call	checkSWDS
-	jr	c, .saicomerro
- ENDIF
-	push	hl
-	call	calculaBLOCOSoffset	; calcular em IX e HL o offset correto do buffer que armazena total de blocos
-	pop	hl		; do cartao dependendo do cartao atual solicitado
-	xor	a
-	ld	(hl), a		; Informar que o dispositivo eh do tipo block device
-	inc	hl
-	ld	(hl), a		; tamanho de um bloco = 512 bytes (coloca $00, $02 que � $200 = 512)
-	inc	hl
-	ld	a, 2
-	ld	(hl), a
-	inc	hl
-	ld	a, (ix)		; copia numero de blocos total
-	ld	(hl), a
-	inc	hl
-	ld	a, (ix+1)
-	ld	(hl), a
-	inc	hl
-	ld	a, (ix+2)
-	ld	(hl), a
-	inc	hl
-	xor	a		; cartoes SD tem total de blocos em 24 bits, mas o Nextor pede numero de
-	ld	(hl), a 	; 32 bits, entao coloca 0 no MSB
-	inc	hl
-	ld	a, 1		; flags: dispositivo R/W removivel
-	ld	(hl), a
-	inc	hl
-	xor	a		; CHS = 0
-	ld	(hl), a
-	inc	hl
-	ld	(hl), a
-	inc	hl
-	ld	(hl), a
-	inc	hl
-	xor	a		; informar que dados foram preenchidos
+
+DEV_STATUS_ERROR:
+	ld      a, 1        ; report error
 	ret
+
 
 ;=====
 ;=====  END of DEVICE-BASED specific routines
