@@ -776,13 +776,13 @@ LUN_INFO:
 	; in little-endian format
     ld      b, 4             ; Set loop counter for 4 sector bytes
 
-SECTOR_READ_LOOP:
+.sector_read_loop:
     ld      a, 5             ; Reload A with command 5
     out     (PORTCFG), a     ; Send the command
     in      a, (PORTSTATUS)  ; Read sector byte
     ld      (hl), a          ; Store it
     inc     hl
-    djnz    SECTOR_READ_LOOP ; Loop until all 4 bytes are read
+    djnz    .sector_read_loop ; Loop until all 4 bytes are read
 	
 	xor	 	a
 	ld      (hl), a     ; +7: Flags = device is not removable
@@ -853,32 +853,6 @@ calculaCIDoffset:
 	pop	ix		; vamos colocar HL em IX
 	ret
 
-;------------------------------------------------
-; Calcula offset do buffer na RAM para os dados
-; do total de blocos dependendo do cartao atual
-; Offset fica em HL e IX
-; Destroi AF, DE, HL e IX
-;------------------------------------------------
-calculaBLOCOSoffset:
-	ld	hl, WRKAREA.BLOCKS1
-	ld	a, (WRKAREA.NUMSD)
-	dec	a
-	jr	z, .c1
-	ld	hl, WRKAREA.BLOCKS2
-.c1:
-	push	hl		
-	pop	ix		; Vamos colocar HL em IX
-	ret
-
-; ------------------------------------------------
-; Setar o tamanho do bloco para 512 se o cartao
-; for SDV1
-; ------------------------------------------------
-mudarTamanhoBlocoPara512:
-	ld	a, CMD16
-	ld	bc, 0
-	ld	de, 512
-	jp	SD_SEND_CMD_GET_ERROR
 
 ; ------------------------------------------------
 ; Desabilitar (de-selecionar) todos os cartoes
