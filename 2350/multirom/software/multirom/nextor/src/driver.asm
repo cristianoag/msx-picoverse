@@ -647,7 +647,7 @@ DEV_INFO_MANUFACTURER:
 	out 	(PORTCFG), a	; send the command to the config port
 	in		a, (PORTSTATUS)	; read the byte with the manufacturer ID
 	call	GETMANUFACTURER	; get the name of the manufacturer on the table
-	ldir		; Copy the manufacturer name from DE to HL
+	ldir		; Copy the manufacturer name string to the buffer at HL
 	xor		a	; Clear A (set to 0)
 	ret			; Return from the routine
 
@@ -655,24 +655,24 @@ DEV_INFO_DEVICENAME:
 
 	push	hl			; save pointer to the buffer
 	ld		b, 64		; fill 64 bytes with spaces
-	ld		a, ' '
+	ld		a, ' '		; load A with the ASCII code for space
 .loop2:
-	ld		(hl), a
-	inc		hl
+	ld		(hl), a		; store space at the address pointed to by HL
+	inc		hl			; increment HL to point to the next byte
 	djnz	.loop2
-	pop		de		; recover pointer in DE
+	pop		de			; recover pointer in DE
 	ld 		de, STR_DEVICENAME   	; DE points to null-terminated device name string
 	ex		de, hl					; HL points to the buffer
-	xor 	a
+	xor 	a		; Clear A (set to 0)
 	ret
 
 DEV_INFO_SERIAL:
 	push	hl			; save pointer to the buffer
 	ld		b, 64		; fill 64 bytes with spaces
-	ld		a, ' '
+	ld		a, ' '		; load A with the ASCII code for space
 .loop3:
-	ld		(hl), a
-	inc		hl
+	ld		(hl), a		; store space at the address pointed to by HL
+	inc		hl			; increment HL to point to the next byte
 	djnz	.loop3
 	pop		de		; recover pointer in DE
 	; Return a serial number string
@@ -685,23 +685,23 @@ DEV_INFO_SERIAL:
 
 	; Prepare the destination buffer starting with "0x"
 	ld		hl, SERIAL_BUFFER ; HL will point to the start of the string buffer
-	ld		(hl), '0'
-	inc		hl
-	ld		(hl), 'x'
-	inc		hl
+	ld		(hl), '0'	; Store '0' at the start of the buffer
+	inc		hl			; Increment HL to point to the next byte
+	ld		(hl), 'x'	; Store 'x' at the next position in the buffer
+	inc		hl			; Increment HL to point to the next byte
 
 	; Copy the converted ASCII characters from DE to the buffer at HL
 	ld		b, 2    ; copy 2 bytes (hexadecimal representation for one byte)
 .copy_loop:
-	ld		a, (de)
-	ld		(hl), a
-	inc		hl
-	inc		de
+	ld		a, (de)	; Load the next byte from DE into A
+	ld		(hl), a	; Store the byte at the address pointed to by HL
+	inc		hl	; Increment HL to point to the next byte
+	inc		de		; Increment DE to point to the next byte
 	djnz	.copy_loop
 
 	; HL now points just after the concatenated string in SERIAL_BUFFER;
 
-	; we can adjust HL to point to the beginning by reloading the address.
+	; can we adjust HL to point to the beginning by reloading the address????
 	ld		hl, SERIAL_BUFFER ; HL points to the start of the string buffer as required
 
 	ret
