@@ -634,22 +634,47 @@ DEV_INFO_BASIC:
 	ret
 
 DEV_INFO_MANUFACTURER:
+	push	hl		; save pointer to the buffer
+	ld		b, 64	; Set B to 64 (number of bytes to fill)
+	ld		a, ' ' 	; Load A with the ASCII code for space
+.loop1:
+	ld		(hl), a	; Store space at the address pointed to by HL
+	inc		hl		; Increment HL to point to the next byte
+	djnz	.loop1	; Decrement B and repeat until B is zero
+	pop		de		; recover pointer in DE
 	; Return a manufacturer name string in HL
 	ld		a, 3			; send the command to return the manufacturer ID
 	out 	(PORTCFG), a	; send the command to the config port
 	in		a, (PORTSTATUS)	; read the byte with the manufacturer ID
 	call	GETMANUFACTURER	; get the name of the manufacturer on the table
-							; GETMANUFACTURER returns HL pointing to the string buffer
-	ret
+	ldir		; Copy the manufacturer name from DE to HL
+	xor		a	; Clear A (set to 0)
+	ret			; Return from the routine
 
 DEV_INFO_DEVICENAME:
-	; Return a device name string (not implemented yet)
-	; it is returning a fixed string "microSD card"
-	ld 		de, STR_DEVICENAME   ; DE points to null-terminated device name string
-	ex		de, hl				; HL points to the buffer
+
+	push	hl			; save pointer to the buffer
+	ld		b, 64		; fill 64 bytes with spaces
+	ld		a, ' '
+.loop2:
+	ld		(hl), a
+	inc		hl
+	djnz	.loop2
+	pop		de		; recover pointer in DE
+	ld 		de, STR_DEVICENAME   	; DE points to null-terminated device name string
+	ex		de, hl					; HL points to the buffer
+	xor 	a
 	ret
 
 DEV_INFO_SERIAL:
+	push	hl			; save pointer to the buffer
+	ld		b, 64		; fill 64 bytes with spaces
+	ld		a, ' '
+.loop3:
+	ld		(hl), a
+	inc		hl
+	djnz	.loop3
+	pop		de		; recover pointer in DE
 	; Return a serial number string
 	ld 		a, 4            ; send the command to return the serial number (0x04)
 	out 	(PORTCFG), a    ; send the command to the config port
@@ -666,7 +691,7 @@ DEV_INFO_SERIAL:
 	inc		hl
 
 	; Copy the converted ASCII characters from DE to the buffer at HL
-	ld		b, 2              ; copy 2 bytes (hexadecimal representation for one byte)
+	ld		b, 2    ; copy 2 bytes (hexadecimal representation for one byte)
 .copy_loop:
 	ld		a, (de)
 	ld		(hl), a
@@ -784,15 +809,15 @@ LUN_INFO:
     inc     hl
     djnz    .sector_read_loop ; Loop until all 4 bytes are read
 	
-	xor	 	a
-	ld      (hl), a     ; +7: Flags = device is not removable
+	;xor	 	a
+	ld      (hl), 0     ; +7: Flags = device is not removable
 	inc     hl
-	xor     a
-	ld      (hl), a     ; +8: Number of cylinders = 0 (not applicable)
+	;xor     a
+	ld      (hl), 0     ; +8: Number of cylinders = 0 (not applicable)
 	inc     hl
-	ld      (hl), a     ; +9: Number of heads = 0
+	ld      (hl), 0     ; +9: Number of heads = 0
 	inc     hl
-	ld      (hl), a     ; +10: Sectors per track = 0
+	ld      (hl), 0     ; +10: Sectors per track = 0
 	ret
 
 DEV_STATUS_ERROR:
