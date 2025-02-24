@@ -1,7 +1,14 @@
 ; -----------------------------------------------------------------------------
 ; Nextor SD Driver for MSX PicoVerse
+; Version: 1.0
+; Author: The Retro Hacker
 ; Copyright (C) 2025 The Retro Hacker
-; 
+;
+; This driver is an integral part of the MSX PicoVerse project, providing
+; reliable SD card support for MSX systems.
+;
+; For documentation, updates, and support, please visit:
+;   https://github.com/cristianoag/msx-picoverse
 ; -----------------------------------------------------------------------------
 
 ; SJASMPLUS assembler instruction to create the binary file
@@ -155,24 +162,16 @@ LINLEN		= $F3B0
 PORTCFG		= $9E
 PORTSTATUS	= $9E
 PORTDATA	= $9F
-PORTSPI		= $9F ; This line will be removed soon
 
-; SPI Commands (deprecated, will be removed soon)
-CMD0	= 0  | $40
-CMD1	= 1  | $40
-CMD8	= 8  | $40
-CMD9	= 9  | $40
-CMD10	= 10 | $40
-CMD12	= 12 | $40
-CMD16	= 16 | $40
-CMD17	= 17 | $40
-CMD18	= 18 | $40
-CMD24	= 24 | $40
-CMD25	= 25 | $40
-CMD55	= 55 | $40
-CMD58	= 58 | $40
-ACMD23	= 23 | $40
-ACMD41	= 41 | $40
+; PicoVerse Nextor Protocol Commands
+; Send commands on the PORTCFG and get the response on the PORTSTATUS
+CMD_01	= 0x01	; SD card initialization, return 1 byte (0x00 = success, 0xFF = failure)
+CMD_02	= 0x02	; Get SD card presence, return 1 byte (0x00 = present, 0xFF = not present)
+CMD_03	= 0x03  ; Get SD card manufacturer ID, return 1 byte (byte of the manufacturer, 0xFF = failure)
+CMD_04	= 0x04  ; Get SD card serial number, return 1 byte (serial number, 0xFF = failure)
+CMD_05	= 0x05  ; Get SD card number of sectors, return 4 bytes (little-endian format, 1 byte 0xFF = failure)
+CMD_06  = 0x06   ; Read a block (or multiple blocks), return multiples of 512 bytes (data from the SD card, 1 byte 0xFF = failure)
+CMD_07  = 0x07   ; Continue reading blocks, return multiples of 512 bytes (data from the SD card, 1 byte 0xFF = failure)
 
 	org	$4000
 
@@ -196,7 +195,7 @@ DRV_START:
 ;             (implements the DRV_CONFIG routine)
 
 
-	db	1+4
+	db	1
 
 
 ;-----------------------------------------------------------------------------
@@ -205,7 +204,6 @@ DRV_START:
 ;
 
 	db	0
-
 
 ;-----------------------------------------------------------------------------
 ;
@@ -271,6 +269,8 @@ DRV_TIMI:
 ;      A = 0
 ;      B = number of available drives
 ;      HL = maximum size of allocatable work area in page 3
+;      C: bit 5 set if user is requesting reduced drive count
+;         (by pressing the 5 key)
 ;    Output:
 ;      A = number of required drives (for drive-based driver only)
 ;      HL = size of required work area in page 3
@@ -280,6 +280,8 @@ DRV_TIMI:
 ;    Input:
 ;      A = 1
 ;      B = number of allocated drives for this controller
+;      C: bit 5 set if user is requesting reduced drive count
+;         (by pressing the 5 key)
 ;
 ;    The work area address can be obtained by using GWORK.
 ;
@@ -310,23 +312,24 @@ DRV_INIT:
 	ld 		de, STRCARD			; load card text
 	call 	PRINTSTRING			; print card text
 
-	ld		a, 0x01		
-	out		(PORTCFG), a		; attempt to initialize the SD card
-	ld 		bc, 0xFF
-	ld 		e, 2
+	ld		a, CMD_01			; set A with the command to initialize the SD card	
+	out		(PORTCFG), a		; send the command to the config port
+	ld 		bc, 0xFF			; this one needs to be long enough to wait for the card to initialize
+	ld 		e, 2				; set E to 2 for the delay loop
 	call	DELAY				; wait to initialize the card and then read the status
 	in		a, (PORTSTATUS)		; read which will have the info if the card is detected or not
 	cp		0					; check if a is 0
 	jr		z, DETECTED			; if a is 0, jump to DETECTED
 	ld		de, STRNOTDETECTED	; if a is not 0, then we need to load the no card text
 	call	PRINTSTRING			; print the no card text
+	
 	ret
 
 DETECTED:
 	ld		de, STRDETECTED	; load the card detected text
 	call	PRINTSTRING		; print the card detected text
 
-	ld		a, 3			; send the command to return the manufacturer ID
+	ld		a, CMD_03		; set A with the command to return the manufacturer ID
 	out 	(PORTCFG), a	; send the command to the port
 
 	ld		a, '['
@@ -341,9 +344,9 @@ DETECTED:
 	call	BIOS_CHPUT		; print the closing bracket
 	ld		de, STRCRLF
 	call	PRINTSTRING		; print CRLF
-	ld 		bc, 0xFF
-	ld 		e, 2
-	call	DELAY			; wait to have the user reading the screen
+	;ld 		bc, 0xFF		
+	;ld 		e, 2
+	;call	DELAY			; wait to have the user reading the screen
 
 	ret
 
@@ -461,6 +464,7 @@ DRV_DIRECT4:
 DRV_CONFIG:
 
     ld 	a,1
+	ld  b,1
     ret
 
 
@@ -493,100 +497,110 @@ DRV_CONFIG:
 ;          B = Number of sectors actually read (in case of error only)
 
 DEV_RW:
-	push	af
-	cp	2		; somente 1 dispositivo
-	jr	nc, .saicomerroidl
-	dec	c		; somente 1 logical unit
-	jr	z, .ok
-.saicomerroidl:
-	pop	af		; retira AF guardado no inicio
-	ld	a, EIDEVL	; informar erro
-	ld	b, 0
-	ret
- IF HWDS = 0
-.errornr:
-	pop	af		; retira AF guardado no inicio
-	ld	a, ENRDY	; Not ready
-;	ld	a, EDISK	; General unknown disk error
-	ld	b, 0
-	ret
- ENDIF
-.ok:
- IF HWDS = 0
-	call	checkSWDS
-	jr	c, .errornr
- ENDIF
- 	ld	a, b
-	ld	(WRKAREA.NUMBLOCKS), a	; guarda numero de blocos para ler/gravar
-	push	hl
-	call	calculaCIDoffset	; calculamos em IX a posicao correta do offset CID dependendo do cartao atual
-	pop	hl
-	pop	af		; retira AF guardado no inicio, para saber se eh leitura ou escrita
-	jr	c, escrita	; se for escrita pulamos
-leitura:
-	ld	a, (de)		; 1. n. bloco
-	push	af
-	inc	de
-	ld	a, (de)		; 2. n. bloco
-	push	af
-	inc	de
-	ld	a, (de)		; 3. n. bloco
-	ld	c, a
-	inc	de
-	ld	a, (de)		; 4. n. bloco
-	inc	de
-	ld	b, a
-	pop	af
-	ld	d, a
-	pop	af		; HL = ponteiro destino
-	ld	e, a		; BC DE = 32 bits numero do bloco
-	call	LerBloco	; chamar rotina de leitura de dados
-	jr	nc, .ok
- IF HWDS = 0
-	call	marcaErroCartao	; ocorreu erro na leitura, marcar erro
- ENDIF
-;	ld	a, ENRDY	; Not ready
-	ld	a, EDISK	; General unknown disk error
-	ld	b, 0		; informar que lemos 0 blocos
-	ret
-.ok:
-	xor	a		; tudo OK, informar ao Nextor
+
+	cp 		1							; Check if device index	is 1
+	jr 		nz, DEV_RW_ERROR_EIDEVL     ; if not jumps to error and set it to EIDEVL
+	ld 		a, b                    	; loads the number of blocks to read/write in A
+	ld		(WRKAREA.NUMBLOCKS), a		; store the number of blocks to read/write in WRKAREA.NUMBLOCKS
+
+	ld		a, c			;Cy=0 to read, 1 to write
+	or		a				; check if it is a read or write operation			
+	jp		z, DEV_RW_READ  ; If zero, select read operation
+	cp		1				; check if it is a write operation
+	jp		z, DEV_RW_WRITE ; If zero, select write operation
+
+	ld		a, EIPARM	; Invalid parameters
 	ret
 
-escrita:
-	in	a, (PORTSTATUS)	; destructive read
-	and	$4		; test if the card is write protected
-	jr	z, .ok
-	ld	a, EWPROT	; write protect
-	ld	b, 0		; 0 blocks were written
-	ret
-.ok:
-	ld	a, (de)		; 1. n. bloco
+DEV_RW_READ:
+
+	;-- Load the 32-bit block number from memory (non–page 1) pointed by DE --
+
+	ld		a, (de)		; first byte of the block number, this goes to E
 	push	af
-	inc	de
-	ld	a, (de)		; 2. n. bloco
+	inc		de
+	ld		a, (de)		; second byte of the block number, this goes to D
 	push	af
-	inc	de
-	ld	a, (de)		; 3. n. bloco
-	inc	de
-	ld	c, a
-	ld	a, (de)		; 4. n. bloco
-	inc	de
-	ld	b, a
-	pop	af
-	ld	d, a
-	pop	af		; HL = ponteiro destino
-	ld	e, a		; BC DE = 32 bits numero do bloco
-	call	GravarBloco	; chamar rotina de gravacao de dados
-	jr	nc, .ok2
- IF HWDS = 0
-	call	marcaErroCartao	; ocorreu erro, marcar nas flags
- ENDIF
-	ld	a, EWRERR	; Write error
-	ld	b, 0
+	inc		de
+	ld		a, (de)		; third byte of the block number, this goes to C
+	ld		c, a
+	inc		de
+	ld		a, (de)		; fourth byte of the block number, this goes to B
+	inc		de
+	ld		b, a
+	pop		af
+	ld		d, a
+	pop		af			
+	ld		e, a		; Now BC:DE holds the 32-bit block number.
+
+	call DEV_RW_READ_BLOCK
+	jr   nc, DEV_RW_READ_OK
+
+	ld   a, EDISK   ; General unknown disk error
+	ld   b, 0      ; Indicate that 0 blocks were read
 	ret
-.ok2:
-	xor	a		; gravacao sem erros!
+
+DEV_RW_READ_OK:
+	xor  a         ; Return 0 (ok)
+	ret
+
+DEV_RW_WRITE:
+	ret
+
+DEV_RW_ERROR_EIDEVL:
+	ld 	a, EIDEVL	; Invalid device or LUN
+	ret
+
+; ------------------------------------------------
+; Read a 512-byte block from the card
+; HL points to the start of the data
+; BC and DE contain the block number (BCDE = 32 bits)
+; Destroys AF, BC, DE, HL
+; ------------------------------------------------
+DEV_RW_READ_BLOCK:
+
+	ld 		a, CMD_06		;	set A with the command to read a block
+	out		(PORTCFG), a	;	send the command to the port
+
+	;; now we need to send the address of the block to be read
+	;; Send block address (4 bytes)
+
+	ld 		a, b			; first byte of the block number
+	out     (PORTCFG), a	
+	ld 		a, c			; second byte
+	out     (PORTCFG), a	
+	ld 		a, d			; third byte
+	out     (PORTCFG), a	
+	ld 		a, e			; fourth byte
+	out     (PORTCFG), a	
+
+	ld      a, CMD_06		; Begin the first block read
+	out     (PORTCFG), a	 
+
+.loop_read:
+	; Read 512 bytes from PORTDATA into memory at HL
+	ld 		c, PORTDATA 	; set C to the port to read the data from
+	ld 		b, 255			; Read 256 bytes...
+	inir					; ...and auto-increment HL
+	ld 		b, 255			; Repeat for another 256 bytes
+	inir					
+
+	; Test if there are more blocks to read
+	ld    	a, (WRKAREA.NUMBLOCKS)
+	cp 		1
+	jr   	z, .exit_read_loop  ; If equal to 1, we have read the last block; exit loop
+
+	; More blocks remain: decrement the counter and request next block
+	dec    	a 						; Decrement block counter by 1
+	ld    	(WRKAREA.NUMBLOCKS), a  ; Store the new block count
+	ld   	a, CMD_07         ; Set A with the continuation command (CMD_07)
+	out 	(PORTCFG), a      ; Send CMD_07 to the configuration port    
+	jr   	.loop_read        ; Then loop to read the next 512-byte block
+
+.exit_read_loop:
+	ret
+
+DEV_RW_WRITE_BLOCK:
 	ret
 
 ;-----------------------------------------------------------------------------
@@ -606,6 +620,7 @@ escrita:
 ;-----------------------------------------------------------------------------
 
 DEV_INFO:
+
 	cp 	1
 	jr 	nz, DEV_INFO_ERROR      ; Only device index 1 supported
 
@@ -619,77 +634,75 @@ DEV_INFO:
 	cp 	3
 	jr 	z, DEV_INFO_SERIAL
 
-	ld 	a, 2                   	; Otherwise, error code 2: Information not available
-	ret
+	;ld 	a, 2                   	; Otherwise, error code 2: Information not available
+	;ret
 
 DEV_INFO_BASIC:
 	; Fill buffer with basic information:
 	; +0: Number of logical units (1)
 	; +1: Device flags (0)
-	ld 		(hl), 1               ; One logical unit
-	inc 	hl
-	xor 	a                     ; Set device flags = 0
-	ld 		(hl), a
-	xor 	a                     ; Return A=0 to indicate success
+	ld      a, $1
+	ld 		(hl), a       	; One logical unit
+	inc 	hl     
+	xor 	a       
+	ld 		(hl), a		; Set device flags = 0
 	ret
 
 DEV_INFO_MANUFACTURER:
-	push	hl		; save pointer to the buffer
-	ld		b, 64	; Set B to 64 (number of bytes to fill)
-	ld		a, ' ' 	; Load A with the ASCII code for space
+	push	hl				; save pointer to the buffer
+	ld		b, 64			; Set B to 64 (number of bytes to fill)
+	ld		a, ' ' 			; Load A with the ASCII code for space
 .loop1:
-	ld		(hl), a	; Store space at the address pointed to by HL
-	inc		hl		; Increment HL to point to the next byte
-	djnz	.loop1	; Decrement B and repeat until B is zero
-	pop		de		; recover pointer in DE
-	; Return a manufacturer name string in HL
-	ld		a, 3			; send the command to return the manufacturer ID
+	ld		(hl), a			; Store space at the address pointed to by HL
+	inc		hl				; Increment HL to point to the next byte
+	djnz	.loop1			; Decrement B and repeat until B is zero
+	pop		de				; recover pointer in DE
+	ld		a, CMD_03		; set A with the command to return the manufacturer ID
 	out 	(PORTCFG), a	; send the command to the config port
 	in		a, (PORTSTATUS)	; read the byte with the manufacturer ID
 	call	GETMANUFACTURER	; get the name of the manufacturer on the table
-	ldir		; Copy the manufacturer name string to the buffer at HL
-	xor		a	; Clear A (set to 0)
-	ret			; Return from the routine
+	ldir					; Copy the manufacturer name string to the buffer at HL
+	xor		a				; Clear A (set to 0)
+	ret						; Return from the routine
 
 DEV_INFO_DEVICENAME:
 
-	push	hl			; save pointer to the buffer
-	ld		b, 64		; fill 64 bytes with spaces
-	ld		a, ' '		; load A with the ASCII code for space
+	push	hl					; save pointer to the buffer
+	ld		b, 64				; fill 64 bytes with spaces
+	ld		a, ' '				; load A with the ASCII code for space
 .loop2:
-	ld		(hl), a		; store space at the address pointed to by HL
-	inc		hl			; increment HL to point to the next byte
+	ld		(hl), a				; store space at the address pointed to by HL
+	inc		hl					; increment HL to point to the next byte
 	djnz	.loop2
-	pop		de			; recover pointer in DE
-	ld 		de, STR_DEVICENAME   	; DE points to null-terminated device name string
-	ex		de, hl					; HL points to the buffer
-	xor 	a		; Clear A (set to 0)
+	pop		de					; recover pointer in DE
+	ld 		de, STR_DEVICENAME  ; DE points to null-terminated device name string
+	ex		de, hl				; HL points to the buffer
+	xor 	a					; Clear A (set to 0)
 	ret
 
 DEV_INFO_SERIAL:
-	push	hl			; save pointer to the buffer
-	ld		b, 64		; fill 64 bytes with spaces
-	ld		a, ' '		; load A with the ASCII code for space
+	push	hl				; save pointer to the buffer
+	ld		b, 64			; fill 64 bytes with spaces
+	ld		a, ' '			; load A with the ASCII code for space
 .loop3:
-	ld		(hl), a		; store space at the address pointed to by HL
-	inc		hl			; increment HL to point to the next byte
+	ld		(hl), a			; store space at the address pointed to by HL
+	inc		hl				; increment HL to point to the next byte
 	djnz	.loop3
-	pop		de		; recover pointer in DE
-	; Return a serial number string
-	ld 		a, 4            ; send the command to return the serial number (0x04)
-	out 	(PORTCFG), a    ; send the command to the config port
-	in		a, (PORTSTATUS)    ; read the byte with the serial number
-
-	call 	HEXTOASCII      ; convert the serial number byte to ASCII
-							; Now DE points to the converted ASCII characters
-
+	pop		de				; recover pointer in DE
+					
 	; Prepare the destination buffer starting with "0x"
-	ld		hl, SERIAL_BUFFER ; HL will point to the start of the string buffer
+	ld		hl, DEV_INFO_SERIAL_BUFFER ; HL will point to the start of the string buffer
 	ld		(hl), '0'	; Store '0' at the start of the buffer
 	inc		hl			; Increment HL to point to the next byte
 	ld		(hl), 'x'	; Store 'x' at the next position in the buffer
 	inc		hl			; Increment HL to point to the next byte
 
+	ld 		a, CMD_04       ; set A with the command to return the serial number (0x04)
+	out 	(PORTCFG), a    ; send the command to the config port
+	; next four readings from PORTSTATUS will provide the serial number in little-endian format (32 bits)
+.serial_read_loop:
+    in      a, (PORTSTATUS)   	; Read sector byte from the status port
+	call 	HEXTOASCII      	; convert the serial number byte in A to ASCII, now DE points to the converted ASCII characters (2)
 	; Copy the converted ASCII characters from DE to the buffer at HL
 	ld		b, 2    ; copy 2 bytes (hexadecimal representation for one byte)
 .copy_loop:
@@ -698,16 +711,13 @@ DEV_INFO_SERIAL:
 	inc		hl	; Increment HL to point to the next byte
 	inc		de		; Increment DE to point to the next byte
 	djnz	.copy_loop
+	djnz    .serial_read_loop ; Loop until all 4 bytes are read
 
-	; HL now points just after the concatenated string in SERIAL_BUFFER;
-
-	; can we adjust HL to point to the beginning by reloading the address????
-	ld		hl, SERIAL_BUFFER ; HL points to the start of the string buffer as required
-
+	ld a, 0	; Clear A (set to 0)
 	ret
 
 ; Define a buffer for the final microSD card serial string
-SERIAL_BUFFER:
+DEV_INFO_SERIAL_BUFFER:
 	ds		4
 
 DEV_INFO_ERROR:
@@ -744,9 +754,8 @@ DEV_INFO_ERROR:
 ; DEV_STATUS itself. Please read the Driver Developer Guide for more info.
 
 DEV_STATUS:
-	xor	a
+	ld a, 1	; Device is available and has not changed since the last status request
 	ret
-
 
 ;-----------------------------------------------------------------------------
 ;
@@ -785,8 +794,9 @@ DEV_STATUS:
 ; For other types of device, these fields must be zero.
 
 LUN_INFO:
+
 	cp      2           ; only one device supported
-	jr      nc, DEV_STATUS_ERROR
+	jr      nc, LUN_INFO_ERROR
 
 	xor     a
 	ld      (hl), a     ; +0: Medium type = 0 (block device)
@@ -801,26 +811,33 @@ LUN_INFO:
 	; in little-endian format
     ld      b, 4             ; Set loop counter for 4 sector bytes
 
-.sector_read_loop:
-    ld      a, 5             ; Reload A with command 5
+    ld      a, CMD_05        ; Set A with command 0x05 to read the number of sectors
     out     (PORTCFG), a     ; Send the command
-    in      a, (PORTSTATUS)  ; Read sector byte
-    ld      (hl), a          ; Store it
-    inc     hl
+							 ; next four readings from PORTSTATUS will provide the number of sectors in little-endian format (32 bits)
+
+	; still dont know if this is required
+	;ld 		bc, 0xFF		
+	;ld 		e, 2
+	;call	DELAY			; wait to have the user reading the screen
+.sector_read_loop:
+	nop						  ; NOP instruction to allow time for the command to be processed
+    in      a, (PORTSTATUS)   ; Read sector byte from the status port
+    ld      (hl), a           ; Store it
+    inc     hl				  ; Increment HL to point to the next byte
     djnz    .sector_read_loop ; Loop until all 4 bytes are read
-	
-	;xor	 	a
+
 	ld      (hl), 0     ; +7: Flags = device is not removable
 	inc     hl
-	;xor     a
 	ld      (hl), 0     ; +8: Number of cylinders = 0 (not applicable)
 	inc     hl
 	ld      (hl), 0     ; +9: Number of heads = 0
 	inc     hl
 	ld      (hl), 0     ; +10: Sectors per track = 0
+
+	ld	  a, 0      ; return 0 (ok)
 	ret
 
-DEV_STATUS_ERROR:
+LUN_INFO_ERROR:
 	ld      a, 1        ; report error
 	ret
 
@@ -829,404 +846,9 @@ DEV_STATUS_ERROR:
 ;=====  END of DEVICE-BASED specific routines
 ;=====
 
-;------------------------------------------------
-; Rotinas auxiliares
-;------------------------------------------------
-
-;------------------------------------------------
-; Testa se cartao esta inserido e/ou houve erro
-; na ultima vez que foi acessado. Carry indica
-; erro
-; Destroi AF
-;------------------------------------------------
-
- IF HWDS = 0
-checkSWDS:
-	ld	a, (WRKAREA.FLAGS)	; testar bit de erro do cartao nas flags
-	and	1
-	jr	z, .ok
-	scf			; indica erro
-	ret
-.ok:
-	xor	a		; zera carry indicando sem erro
-	ret
-
-;------------------------------------------------
-; Marcar bit de erro nas flags
-; Destroi AF, C
-;------------------------------------------------
-marcaErroCartao:
-	ld	a, (WRKAREA.FLAGS)	; marcar erro
-	or	1
-	ld	(WRKAREA.FLAGS), a
-	ret
-
- ENDIF
-
-;------------------------------------------------
-; Calcula offset do buffer na RAM em HL e IX para
-; os dados do CID dependendo do cartao atual
-; Destroi AF, DE, HL e IX
-;------------------------------------------------
-calculaCIDoffset:
-	ld	hl, WRKAREA.BCID1
-	ld	a, (WRKAREA.NUMSD)
-	dec	a
-	jr	z, .c1
-.c1:
-	push	hl		
-	pop	ix		; vamos colocar HL em IX
-	ret
-
-
 ; ------------------------------------------------
-; Desabilitar (de-selecionar) todos os cartoes
-; Nao destroi registradores
-; ------------------------------------------------
-desabilitaSDs:
-	push	af
-	ld	a, $FF
-	out	(PORTCFG), a
-	pop	af
-	ret
-
-; ------------------------------------------------
-; Enviar CMD1 para cartao. Carry indica erro
-; Destroi AF, BC, DE
-; ------------------------------------------------
-SD_SEND_CMD1:
-	ld	a, CMD1
-SD_SEND_CMD_NO_ARGS:
-	ld	bc, 0
-	ld	d, b
-	ld	e, c
-SD_SEND_CMD_GET_ERROR:
-	call	SD_SEND_CMD
-	or	a
-	ret	z		; se A=0 nao houve erro, retornar
-	; fall throw
-
-; ------------------------------------------------
-; Informar erro
-; Nao destroi registradores
-; ------------------------------------------------
-setaErro:
-	scf
-	jr		desabilitaSDs
-
-; ------------------------------------------------
-; Enviar comando em A com 2 bytes de parametros
-; em DE e testar retorno BUSY
-; Retorna em A a resposta do cartao
-; Destroi AF, BC
-; ------------------------------------------------
-SD_SEND_CMD_2_ARGS_TEST_BUSY:
-	ld	bc, 0
-	call	SD_SEND_CMD
-	ld	b, a
-	and	$FE		; testar bit 0 (flag BUSY)
-	ld	a, b
-	jr	nz, setaErro	; BUSY em 1, informar erro
-	ret			; sem erros
-
-; ------------------------------------------------
-; Enviar comando em A com 2 bytes de parametros
-; em DE e ler resposta do tipo R3 em BC DE
-; Retorna em A a resposta do cartao
-; Destroi AF, BC, DE, HL
-; ------------------------------------------------
-SD_SEND_CMD_2_ARGS_GET_R3:
-	call	SD_SEND_CMD_2_ARGS_TEST_BUSY
-	ret	c
-	push	af
-	call	WAIT_RESP_NO_FF
-	ld	h, a
-	call	WAIT_RESP_NO_FF
-	ld	l, a
-	call	WAIT_RESP_NO_FF
-	ld	d, a
-	call	WAIT_RESP_NO_FF
-	ld	e, a
-	ld	b, h
-	ld	c, l
-	pop	af
-	ret
-
-; ------------------------------------------------
-; Enviar comando em A com 4 bytes de parametros
-; em BC DE e enviar CRC correto se for CMD0 ou 
-; CMD8 e aguardar processamento do cartao
-; Destroi AF, BC
-; ------------------------------------------------
-SD_SEND_CMD:
-	call	enableSD
-	out	(PORTSPI), a
-	push	af
-	ld	a, b
-	nop
-	out	(PORTSPI), a
-	ld	a, c
-	nop
-	out	(PORTSPI), a
-	ld	a, d
-	nop
-	out	(PORTSPI), a
-	ld	a, e
-	nop
-	out	(PORTSPI), a
-	pop	af
-	cp	CMD0
-	ld	b, $95		; CRC para CMD0
-	jr	z, enviaCRC
-	cp	CMD8
-	ld	b, $87		; CRC para CMD8
-	jr	z, enviaCRC
-	ld	b, $FF		; CRC dummy
-enviaCRC:
-	ld	a, b
-	out	(PORTSPI), a
-	jr	WAIT_RESP_NO_FF
-
-; ------------------------------------------------
-; Esperar que resposta do cartao seja $FE
-; Destroi AF, B
-; ------------------------------------------------
-WAIT_RESP_FE:
-	ld	b, 10		; 10 tentativas
-.loop:
-	push	bc
-	call	WAIT_RESP_NO_FF	; esperar resposta diferente de $FF
-	pop	bc
-	cp	$FE		; resposta � $FE ?
-	ret	z		; sim, retornamos com carry=0
-	djnz	.loop
-	scf			; erro, carry=1
-	ret
-
-; ------------------------------------------------
-; Esperar que resposta do cartao seja diferente
-; de $FF
-; Destroi AF, BC
-; ------------------------------------------------
-WAIT_RESP_NO_FF:
-	ld	bc, 100		; 25600 tentativas
-.loop:
-	in	a, (PORTSPI)
-	cp	$FF		; testa $FF
-	ret	nz		; sai se nao for $FF
-	djnz	.loop
-	dec	c
-	jr	nz, .loop
-	ret
-
-; ------------------------------------------------
-; Esperar que resposta do cartao seja diferente
-; de $00
-; Destroi A, BC
-; ------------------------------------------------
-WAIT_RESP_NO_00:
-	ld	bc, 32768	; 32768 tentativas
-.loop:
-	in	a, (PORTSPI)
-	or	a
-	ret	nz		; se resposta for <> $00, sai
-	djnz	.loop
-	dec	c
-	jr	nz, .loop
-	scf			; erro
-	ret
-
-; ------------------------------------------------
-; Ativa (seleciona) cartao atual baixando seu /CS
-; Nao destroi registradores
-; ------------------------------------------------
-enableSD:
-
-	push	af
-	in	a, (PORTSPI)	; dummy read
-	ld	a, $FE
-	out	(PORTCFG), a
-	pop	af
-	ret
-
-
-; ------------------------------------------------
-; Grava um bloco de 512 bytes no cartao
-; HL aponta para o inicio dos dados
-; BC e DE contem o numero do bloco (BCDE = 32 bits)
-; Destroi AF, BC, DE, HL
-; ------------------------------------------------
-GravarBloco:
-	ld	a, (ix+15)	; verificar se eh SDV1 ou SDV2
-	or	a
-	call	z, blocoParaByte	; se for SDV1 coverter blocos para bytes
-	call	enableSD
-	ld	a, (WRKAREA.NUMBLOCKS)	; testar se Nextor quer gravar 1 ou mais blocos
-	dec	a
-	jp	z, .umBloco	; somente um bloco, gravar usando CMD24
-
-; multiplos blocos
-	push	bc
-	push	de
-	ld	a, CMD55	; Multiplos blocos, mandar ACMD23 com total de blocos
-	call	SD_SEND_CMD_NO_ARGS
-	ld	bc, 0
-	ld	d, c
-	ld	a, (WRKAREA.NUMBLOCKS)	; parametro = total de blocos a gravar
-	ld	e, a
-	ld	a, ACMD23
-	call	SD_SEND_CMD_GET_ERROR
-	pop	de
-	pop	bc
-	jp	c, .erro	; erro no ACMD23
-	ld	a, CMD25	; comando CMD25 = write multiple blocks
-	call	SD_SEND_CMD_GET_ERROR
-	jp	c, .erro	; erro
-.loop:
-	ld	a, $FC		; mandar $FC para indicar que os proximos dados sao
-	out	(PORTSPI), a	; dados para gravacao
-	ld	bc, PORTSPI
-	otir
-	otir
-	ld	a, $FF		; envia dummy CRC
-	out	(PORTSPI), a
-	nop
-	out	(PORTSPI), a
-	call	WAIT_RESP_NO_FF	; esperar cartao
-	and	$1F		; testa bits erro
-	cp	5
-	jr	nz, .erro	; resposta errada, informar erro
-	call	WAIT_RESP_NO_00	; esperar cartao
-	jr	c, .erro
-	ld	a, (WRKAREA.NUMBLOCKS)	; testar se tem mais blocos para gravar
-	dec	a
-	ld	(WRKAREA.NUMBLOCKS), a
-	jp	nz, .loop
-	in	a, (PORTSPI)	; acabou os blocos, fazer 2 dummy reads
-	nop
-	in	a, (PORTSPI)
-	ld	a, $FD		; enviar $FD para informar ao cartao que acabou os dados
-	out	(PORTSPI), a
-	nop
-	nop
-	in	a, (PORTSPI)	; dummy reads
-	nop
-	in	a, (PORTSPI)
-	call	WAIT_RESP_NO_00	; esperar cartao
-	jp	.fim		; CMD25 concluido, sair informando nenhum erro
-
-.umBloco:
-	ld	a, CMD24	; gravar somente um bloco com comando CMD24 = Write Single Block
-	call	SD_SEND_CMD_GET_ERROR
-	jr	nc, .ok
-.erro:
-	scf			; informar erro
-	jp	terminaLeituraEscritaBloco
-.ok:
-	ld	a, $FE		; mandar $FE para indicar que vamos mandar dados para gravacao
-	out	(PORTSPI), a
-	ld	bc, PORTSPI
-	otir
-	otir
-	ld	a, $FF		; envia dummy CRC
-	out	(PORTSPI), a
-	nop
-	out	(PORTSPI), a
-	call	WAIT_RESP_NO_FF	; esperar cartao
-	and	$1F		; testa bits erro
-	cp	5
-	jp	nz, .erro	; resposta errada, informar erro
-.esp:
-	call	WAIT_RESP_NO_FF	; esperar cartao
-	or	a
-	jr	z, .esp
-.fim:
-	xor	a		; zera carry e informa nenhum erro
-terminaLeituraEscritaBloco:
-	push	af
-	call	desabilitaSDs	; desabilitar todos os cartoes
-	pop	af
-	ret
-
-; ------------------------------------------------
-; Ler um bloco de 512 bytes do cartao
-; HL aponta para o inicio dos dados
-; BC e DE contem o numero do bloco (BCDE = 32 bits)
-; Destroi AF, BC, DE, HL
-; ------------------------------------------------
-LerBloco:
-	ld	a, (ix+15)	; verificar se eh SDV1 ou SDV2
-	or	a
-	call	z, blocoParaByte	; se for SDV1 coverter blocos para bytes
-	call	enableSD
-	ld	a, (WRKAREA.NUMBLOCKS)	; testar se Nextor quer ler um ou mais blocos
-	dec	a
-	jp	z, .umBloco	; somente um bloco, pular
-
-; multiplos blocos
-	ld	a, CMD18	; ler multiplos blocos com CMD18 = Read Multiple Blocks
-	call	SD_SEND_CMD_GET_ERROR
-	jr	c, .erro
-.loop:
-	call	WAIT_RESP_FE
-	jr	c, .erro
-	ld	bc, PORTSPI
-	inir
-	inir
-	nop
-	in	a, (PORTSPI)	; descarta CRC
-	nop
-	in	a, (PORTSPI)
-	ld	a, (WRKAREA.NUMBLOCKS)	; testar se tem mais blocos para ler
-	dec	a
-	ld	(WRKAREA.NUMBLOCKS), a
-	jp	nz, .loop
-	ld	a, CMD12	; acabou os blocos, mandar CMD12 para cancelar leitura
-	call	SD_SEND_CMD_NO_ARGS
-	jr	.fim
-
-.umBloco:
-	ld	a, CMD17	; ler somente um bloco com CMD17 = Read Single Block
-	call	SD_SEND_CMD_GET_ERROR
-	jr	nc, .ok
-.erro:
-	scf
-	jp	terminaLeituraEscritaBloco
-.ok:
-	call	WAIT_RESP_FE
-	jr	c, .erro
-	ld	bc, PORTSPI
-	inir
-	inir
-	nop
-	in	a, (PORTSPI)	; descarta CRC
-	nop
-	in	a, (PORTSPI)
-.fim:
-	xor	a		; zera carry para informar leitura sem erros
-	jp	terminaLeituraEscritaBloco
-
-; ------------------------------------------------
-; Converte blocos para bytes. Na pratica faz
-; BC DE = (BC DE) * 512
-; ------------------------------------------------
-blocoParaByte:
-	ld	b, c
-	ld	c, d
-	ld	d, e
-	ld	e, 0
-	sla	d
-	rl	c
-	rl	b
-	ret
-
-; ------------------------------------------------
-; Funcoes utilitarias
-; ------------------------------------------------
-
-; ------------------------------------------------
-; Imprime string na tela apontada por DE
-; Destroi todos os registradores
+; Prints the string on the screen pointed by DE
+; Destroys all registers
 ; ------------------------------------------------
 PRINTSTRING:
 	ld	a, (de)
@@ -1236,13 +858,12 @@ PRINTSTRING:
 	inc	de
 	jr	PRINTSTRING
 
-
 ; ------------------------------------------------
-; Converte o byte em A para string em decimal no
-; buffer apontado por DE
-; Destroi AF, BC, HL, DE
+; Convert the byte in A to a decimal string in
+; the buffer pointed to by DE
+; Destroys AF, BC, HL, DE
 ; ------------------------------------------------
-DecToAscii:
+DECTOASCII:
 	ld	iy, WRKAREA.TEMP
 	ld	h, 0
 	ld	l, a		; copiar A para HL
@@ -1436,7 +1057,6 @@ STR_DEVICENAME:
 ; RAM area
 	org		$7000
 
-
 ;-----------------------------------------------------------------------------
 ;
 ; End of the driver code
@@ -1449,13 +1069,7 @@ WRKAREA.NUMBLOCKS	ds 1	; Number of blocks in multi-block operations
 WRKAREA.BLOCKS1	    ds 3	; 3 bytes. Size of card1, in blocks.
 WRKAREA.BLOCKS2	    ds 3	; 3 bytes. Size of card2, in blocks.
 WRKAREA.TEMP		ds 1	; Temporary data
-
- IF HWDS = 0
-FLAGS		ds 1	; Flags for soft-diskchange
- ENDIF
 ; ENDS
-
-
 
 DRV_END:
 

@@ -29,9 +29,6 @@
 
 	output	"build/driver.bin"
 
-; Uses HW (1) or SW (0) disk-change:
-HWDS = 1
-
 
 ;-----------------------------------------------------------------------------
 ;
@@ -581,6 +578,7 @@ DEV_RW:
 	pop	af		; retira AF guardado no inicio, para saber se eh leitura ou escrita
 	jr	c, escrita	; se for escrita pulamos
 leitura:
+
 	ld	a, (de)		; 1. n. bloco
 	push	af
 	inc	de
@@ -934,6 +932,7 @@ LUN_INFO:
 	ld	(hl), a
 	inc	hl
 	xor	a		; informar que dados foram preenchidos
+	
 	ret
 
 ;=====

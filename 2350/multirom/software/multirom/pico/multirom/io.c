@@ -5,9 +5,6 @@
 #include "multirom.h"
 #include "io.h"
 
-// Global registers (emulating the Nextor driver's registers)
-uint8_t ctrl_reg = 0;  // Last value written to port 0x9E (control)
-uint8_t data_reg = 0;     // Last SPI response from port 0x9F (data)
 
 void __not_in_flash_func(io_main2)(){
     
@@ -36,6 +33,18 @@ void __not_in_flash_func(io_main2)(){
 
 void __not_in_flash_func(io_main)(){
 
+    uint8_t  data_buffer[512];
+    uint16_t data_to_send = 0;
+    uint8_t  data_byte_index = 0;
+
+    uint8_t ctrl_to_receive = 0;
+    uint32_t block_address = 0;
+    bool block_read = false;
+
+    uint8_t ctrl_reg = 0;  // Last value written to port 0x9E (control)
+    uint8_t data_reg = 0;     // Last SPI response from port 0x9F (data)
+
+
     BYTE const pdrv = 0;  // Physical drive number
     DSTATUS ds = 1; // Disk status (1 = not initialized)
 
@@ -61,6 +70,22 @@ void __not_in_flash_func(io_main)(){
                 // Port 0x9E (Control Write): Set the control register.
                 if (port == 0x9E)
                 {
+                    // this is to receive the address to read from the SD card from cmd_06
+                    // when called first time, next 4 writes will have the 32 bit address of the block to read
+                    if (ctrl_to_receive > 0) // here we need to receive the address to read from the SD card
+                    {
+                        //printf("Addressing SD card block: %d\n", ctrl_to_receive);
+                        //printf("MSX Write 0x9E: Control=0x%02x\n", busdata);
+                        // On the next calls, receive the address to read from the SD card
+                        // and set the data_to_send to 512 bytes (4096 bits)
+                        block_address = (block_address << 8) | busdata; // Shift left and add the new byte
+                        ctrl_to_receive--;
+                        if (ctrl_to_receive == 0) {
+                                //printf("MSX: SD card block address: %d\n", block_address);
+                                block_read = true;
+                        }
+                    }
+
                     //printf("MSX Write 0x9E: Control=0x%02x\n", busdata);
                     //printf("BUSDATA == 0x01: %d\n", busdata == 1);
                     // 0x01 = SD card initialization
@@ -95,12 +120,12 @@ void __not_in_flash_func(io_main)(){
                         }
                     }
 
-                    // 0x03 = SD card manufacturer ID set
+                    // 0x03 = SD card manufacturer ID 
                     if (busdata == 0x03) {
                         if (!(ds & STA_NOINIT)) {
-
                             sd_card_t *sd_card = sd_get_by_num(0);
                             ctrl_reg = (uint8_t)ext_bits16(sd_card->state.CID, 127, 120);
+                            //printf("MSX: SD card manufacturer ID: 0x%02X\n", ctrl_reg);
                         }
                         else {
                            // printf("MSX: SD card is not present or not initialized\n");
@@ -111,10 +136,18 @@ void __not_in_flash_func(io_main)(){
                     // 0x04 = SD card serial number
                     if (busdata == 0x04) {
                         if (!(ds & STA_NOINIT)) {
-                            sd_card_t *sd_card = sd_get_by_num(0);
-                            // in fact the serial for the microSD card is a 32bit number that goes from 
-                            // 24 to 55. we are returning just the first least significant byte.
-                            ctrl_reg = (uint8_t)ext_bits16(sd_card->state.CID, 31, 24);
+                            if (data_to_send == 0) {
+                                // On the first call, query the SD card serial number and store on the data buffer
+                                // set the data_to_send to 4 bytes (32 bits)
+                                memset(data_buffer, 0, 32);
+                                sd_card_t *sd_card = sd_get_by_num(0);
+                                DWORD serial = ext_bits16(sd_card->state.CID, 55, 24);
+                                //printf("MSX: SD card serial number: %d\n", serial);
+                                memcpy(data_buffer, &serial, 4);
+                                data_to_send = 4;
+                                data_byte_index = 0;
+                            }
+
                         }
                         else {
                             //printf("MSX: SD card is not present or not initialized\n");
@@ -125,34 +158,132 @@ void __not_in_flash_func(io_main)(){
                     // 0x05 = SD card capacity (number of blocks), returned one byte per call (little-endian)
                     if (busdata == 0x05) {
                         // Use static variables to keep the state across calls.
-                        static int capacity_byte_index = 0;
-                        static DWORD capacity_cached = 0;
+                        DWORD capacity = 0;
 
                         if (!(ds & STA_NOINIT)) {
-                            if (capacity_byte_index == 0) {
-                                // On the first call, query the SD card capacity.
-                                DRESULT dr = disk_ioctl(pdrv, GET_SECTOR_COUNT, &capacity_cached);
-                                printf("MSX: SD card capacity: %d\n", capacity_cached);
+                            if (data_to_send == 0) {
+                                memset(data_buffer, 0, 32);
+                                // On the first call, query the SD card capacity and store on the data buffer
+                                // set the data_to_send to 4 bytes (32 bits)
+                                DRESULT dr = disk_ioctl(pdrv, GET_SECTOR_COUNT, &capacity); // Get the capacity of the SD card
+                                //printf("MSX: SD card capacity: %d\n", capacity); 
                                 if (dr != RES_OK) {
                                     // If there is an error, signal error and reset index.
                                     ctrl_reg = 0xFF;
-                                    capacity_byte_index = 0;
+                                    data_to_send = 0;
                                     break;
                                 }
+                                else {
+                                    //printf("Sending 4 bytes of SD card capacity: %d\n", capacity);
+                                    data_to_send = 4;        // 4 bytes (32 bits)
+                                    data_byte_index = 0;     // Reset index
+                                    memcpy(data_buffer, &capacity, 4); // Copy capacity to data buffer
+                                    //for (int i = 0; i < 4; i++) {
+                                     //   printf("data_buffer[%d]: %d\n", i, data_buffer[i]);
+                                    //}
+                                }
                             }
-                            // Return one byte of the capacity (little-endian order)
-                            ctrl_reg = (uint8_t)((capacity_cached >> (capacity_byte_index * 8)) & 0xFF);
-                            capacity_byte_index = (capacity_byte_index + 1) % 4;
+
                         }
                         else {
                             // SD card not present or not initialized
                             ctrl_reg = 0xFF;
                         }
                     }
+
+                    // 0x06 = Read an specific SD card block with 512 bytes in size
+                    // when called first time, next 4 writes will have the 32 bit address of the block to read
+                    // then, the next 512 reads will return the data from the block
+                    if (busdata == 0x06) {
+                        if (!(ds & STA_NOINIT)) {
+                            if (!block_read) {
+                                // On the first call, set the ctrl_to_receive to 4 as we are expecting 4 bytes (32 bits)
+                                // for the address of the block to read from the SD card
+                                // set the data_to_send to 4 bytes (32 bits)
+                                ctrl_to_receive = 4;
+                                //printf("Next 4 commands sent to port 9E will form the block address: %d\n", ctrl_to_receive);
+                            }
+                            else if (block_read) // here we need to read the data from the SD card to the buffer
+                            {
+                                // On the next call, read the data from the SD card to the buffer and set the data_to_send to 512 bytes (4096 bits)
+                                memset(data_buffer, 0, 512); // Clear data buffer
+                                DRESULT dr = disk_read(pdrv, (BYTE*)data_buffer, block_address, 1); // Read one sector from the SD card
+                                if (dr != RES_OK) {
+                                    // If there is an error, signal error and reset index.
+                                    ctrl_reg = 0xFF;
+                                    data_to_send = 0;
+                                    break;
+                                }
+                                else {
+                                    data_to_send = 512; // Set data to send to 512 bytes (4096 bits)
+                                    data_byte_index = 0; // Reset index
+                                    block_read = false; // Reset block read flag
+
+                                    // debug print the data buffer
+                                    //printf("MSX: SD card block data for block %d:\n", block_address);
+                                    //for (int i = 0; i < 512; i += 16) {
+                                        // Print the address (in hexadecimal, 4 digits)
+                                       // printf("%04X: ", i);
+                                        // Print 16 bytes per line
+                                        //for (int j = 0; j < 16; j++) {
+                                        //        printf("%02X ", data_buffer[i + j]);
+                                       // }
+                                       // printf("\n");
+                                   // }
+
+                                }
+                            }
+                        }
+                        else {
+                            // SD card not present or not initialized
+                            ctrl_reg = 0xFF;
+                        }
+                        
+                    }
+
+
+                    // 0x07 = Read the next card block with 512 bytes in size
+                    // can only be executed after the 0x06 command
+                    if (busdata == 0x07) {
+                        if (!(ds & STA_NOINIT)) {
+                            memset(data_buffer, 0, 512);
+                            block_address++;
+                            DRESULT dr = disk_read(pdrv, (BYTE*)data_buffer, block_address, 1); // Read one sector from the SD card
+                            if (dr != RES_OK) {
+                                // If there is an error, signal error and reset index.
+                                ctrl_reg = 0xFF;
+                                data_to_send = 0;
+                                break;
+                            }
+                            else {
+                                data_to_send = 512; // Set data to send to 512 bytes (4096 bits)
+                                data_byte_index = 0; // Reset index
+
+                                 // debug print the data buffer
+                                 //printf("MSX: SD card block data for block %d:\n", block_address);
+                                 //for (int i = 0; i < 512; i += 16) {
+                                     // Print the address (in hexadecimal, 4 digits)
+                                     //printf("%04X: ", i);
+                                     // Print 16 bytes per line
+                                     //for (int j = 0; j < 16; j++) {
+                                     //        printf("%02X ", data_buffer[i + j]);
+                                    // }
+                                    // printf("\n");
+                                // }
+                            }
+                        }
+                        else {
+                            // SD card not present or not initialized
+                            ctrl_reg = 0xFF;
+                        }
+                    }
+                    
                 }
                 else if (port == 0x9F) // Port 0x9F (Data Write): Send the byte to the media
                 {
-                    
+                    //
+                    // NOT IMPLEMENTED YET. TO WRITE TO DISCK IN NEXTOR
+                    // 
                     uint8_t spi_tx = busdata;
                     uint8_t spi_rx = 0;
 
@@ -177,19 +308,36 @@ void __not_in_flash_func(io_main)(){
 
                 if (port == 0x9E)
                 {
-                    out_val = ctrl_reg;
+                    if (data_to_send > 0) {
+                        // Return the next byte of the capacity (little-endian order)
+                        out_val = data_buffer[data_byte_index];
+                        data_byte_index++;
+                        data_to_send--;
+                        //printf("MSX Read 0x9E: Control=0x%02x\n", out_val);
+                    }
+                    else {
+                        // No extra data to send, return just the control register value.
+                        out_val = ctrl_reg;
+                    }
                     //printf("MSX Read 0x9E: Control=0x%02x\n", out_val);
                 }
                 else if (port == 0x9F)
                 {
-                    // Port 0x9F (Data Read): Return the last SPI response.
-                    out_val = data_reg;
+                    if (data_to_send > 0) {
+                        // Return the next byte of the data buffer
+                        out_val = data_buffer[data_byte_index];
+                        data_byte_index++;
+                        data_to_send--;
+                    }
+                    else {
+                        // No extra data to send, return just the last SPI response.
+                        out_val = data_reg;
+                    }
                 }
 
                 if ((port == 0x9E) || (port == 0x9F))
                 {
                     gpio_set_dir(PIN_BUSSDIR, GPIO_OUT); 
-                    // Set the data bus to output mode, write the data, and return to input mode.
                     gpio_set_dir_out_masked(0xFF << 16); // Set data bus to output mode
                     gpio_put(PIN_BUSSDIR, 0); // Set the data bus to output mode
                     gpio_put_masked(0xFF0000, out_val << 16); // Write the data to the data bus
@@ -198,7 +346,6 @@ void __not_in_flash_func(io_main)(){
                     gpio_set_dir(PIN_BUSSDIR, GPIO_IN);
                     gpio_set_dir_in_masked(0xFF << 16); // Return data bus to input mode after cycle completes
 
-                    //printf("MSX Read from 0x%02x: Output=0x%02x\n", port, out_val);
                 }
 
             }
