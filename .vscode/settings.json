@@ -8,6 +8,7 @@
         "uf2format.h": "c",
         "text_encoding": "c",
         "cstddef": "c",
-        "cstdint": "cpp"
+        "cstdint": "cpp",
+        "typeinfo": "cpp"
     }
 }
