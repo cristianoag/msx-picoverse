@@ -88,7 +88,42 @@ void msx_wait (uint16_t times_jiffy)  __z88dk_fastcall __naked
     __endasm; 
 }
 
-void delay_ms (uint16_t milliseconds)
+void delay_ms (uint16_t milliseconds) 
 {
     msx_wait (milliseconds/20);
+}
+
+uint8_t getManufacturerID() 
+{
+    write_command(0x03);
+    //delay_ms(50);
+    return read_status();
+}
+
+uint32_t getSDCapacity() 
+{
+    uint32_t sd_capacity;
+    sd_capacity = 0;
+    write_command(0x05); 
+    for (uint8_t i=0;i<4;i++)
+    {
+       delay_ms(60);
+       uint8_t byte = read_status();
+       sd_capacity |= (uint32_t)byte<<(8 * i);
+    }
+    return sd_capacity;
+}
+
+uint32_t getSDSerial() 
+{
+    uint32_t sd_serial;
+    sd_serial = 0;
+    write_command(0x04); 
+    for (uint8_t i=0;i<4;i++)
+    {
+        delay_ms(60);
+        uint8_t byte = read_status();
+        sd_serial |= (uint32_t)byte<<(8 * i);
+    }
+    return sd_serial;
 }

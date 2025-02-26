@@ -9,6 +9,11 @@
         "text_encoding": "c",
         "cstddef": "c",
         "cstdint": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "array": "cpp",
+        "string": "cpp",
+        "string_view": "cpp",
+        "span": "cpp",
+        "sdcards.h": "c"
     }
 }

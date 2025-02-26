@@ -179,8 +179,8 @@ void __not_in_flash_func(io_main)(){
                                     data_byte_index = 0;     // Reset index
                                     memcpy(data_buffer, &capacity, 4); // Copy capacity to data buffer
                                     //for (int i = 0; i < 4; i++) {
-                                     //   printf("data_buffer[%d]: %d\n", i, data_buffer[i]);
-                                    //}
+                                    //    printf("data_buffer[%d]: %d\n", i, data_buffer[i]);
+                                   // }
                                 }
                             }
 

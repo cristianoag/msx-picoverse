@@ -50,5 +50,5 @@ package:
 
 clean:
 	@echo "Cleaning..."
-	@rm -f $(BUILD_DIR)/driver.* $(BUILD_DIR)/nextor.rom $(BUILD_DIR)/msxromcrt0.rel
+	@rm -f $(BUILD_DIR)/driver.* $(BUILD_DIR)/nextor.rom $(BUILD_DIR)/msxromcrt0.rel $(BUILD_DIR)/hal.*
 	@rm -f $(DIST_DIR)/nextor.rom 

@@ -8,6 +8,9 @@
 #include "sdcards.h"
 
 
+static uint8_t sd_manufacturer_id;
+static char* sd_manufacturer_name;
+
 int putchar (int character)
 {
     __asm
@@ -24,7 +27,6 @@ int putchar (int character)
 
     return character;
 }
-
 
 // return the pointer to the allocated workarea
 workarea_t* get_workarea() __z88dk_fastcall __naked
@@ -102,11 +104,6 @@ uint16_t get_workarea_size (uint8_t reduced_drive_count,uint8_t nr_available_dri
 */
 void init_driver (uint8_t reduced_drive_count,uint8_t nr_allocated_drives)
 {
-    #ifdef DEBUG
-        printf ("init_driver (%x,%x)\r\n",nr_allocated_drives,reduced_drive_count);
-    #endif
-
-    //hal_init (); //check MSX version and if it supports 80 column mode set it
 
     workarea_t* workarea = get_workarea();
 
@@ -121,13 +118,17 @@ void init_driver (uint8_t reduced_drive_count,uint8_t nr_allocated_drives)
     uint8_t sd_init = read_status();
     if (sd_init==0x00)
     {
+
         //card detected
         workarea->disk_change = true;
-        write_command(0x03);
-        uint8_t sd_type = read_status();
-        char* sd_manufacturer = getManufacturerName(sd_type);
-        printf("Detected [%s]\r\n",sd_manufacturer);
-        delay_ms(1000);
+
+        sd_manufacturer_id = getManufacturerID();
+        //send command to get the manufacturer code
+        sd_manufacturer_name = getManufacturerName(sd_manufacturer_id);
+
+        printf("%s microSD\r\n",sd_manufacturer_name);
+        
+        delay_ms(2000);
 
     }
     else
@@ -154,7 +155,7 @@ uint8_t get_nr_drives_boottime (uint8_t reduced_drive_count,uint8_t dos_mode)
         printf ("get_nr_drives_boottime (%d,%d)\r\n",dos_mode,reduced_drive_count);
     #endif
 
-    workarea_t* workarea = get_workarea();
+    //workarea_t* workarea = get_workarea();
     
     return 1; // 1 drive requested
 }
@@ -216,20 +217,16 @@ uint16_t get_drive_config (uint8_t relative_drive_number,uint8_t dos_mode)
 
 uint8_t get_lun_info (uint8_t nr_lun,uint8_t nr_device,luninfo_t* luninfo)
 {
-    #ifdef DEBUG
-        printf ("get_lun_info (%x,%x)\r\n",nr_device,nr_lun);
-    #endif
-
     if (nr_lun==1 && nr_device==1)
     {
         memset (luninfo,0,sizeof (luninfo_t));
-        //luninfo->medium_type = 0;
+        luninfo->medium_type = 0;
         luninfo->sector_size = 512;
-        //luninfo->total_nr_sectors = 1440;
+        luninfo->total_nr_sectors = getSDCapacity();
         luninfo->flags = 0b00000001; // ; removable + non-read only + no floppy
-        //luninfo->nr_cylinders = 80;
-        //luninfo->nr_heads = 2;
-        //luninfo->nr_sectors_track = 9;
+        luninfo->nr_cylinders = 0;
+        luninfo->nr_heads = 0;
+        luninfo->nr_sectors_track = 0;
         return 0x00;
     }
     // indicate error
@@ -275,9 +272,10 @@ uint8_t get_lun_info (uint8_t nr_lun,uint8_t nr_device,luninfo_t* luninfo)
 */
 uint8_t get_device_info (uint8_t nr_info,uint8_t nr_device,uint8_t* info_buffer)
 {
-    #ifdef DEBUG
-        printf ("get_device_info (%x,%x)\r\n",nr_device,nr_info);
-    #endif
+
+    //workarea_t* workarea = get_workarea();
+    
+    char* sdstr;
 
     if (nr_device!=1)
         return 1;
@@ -289,18 +287,22 @@ uint8_t get_device_info (uint8_t nr_info,uint8_t nr_device,uint8_t* info_buffer)
                 ((deviceinfo_t*)info_buffer)->flags = 0x00;
                 break;
         case 1: // Manufacturer name string
-                strcpy ((char*)info_buffer,"Toshiba");
+                strcpy ((char*)info_buffer,sd_manufacturer_name);
                 break;
         case 2: // Device name string
-                strcpy ((char*)info_buffer,"Toshiba 4GB SDHC");
+                //sprintf(sdstr,"%s microSD card",sd_manufacturer_name);
+                strcpy((char*)info_buffer, sd_manufacturer_name);
+                strcat((char*)info_buffer, " microSD card");
                 break;
         case 3: // Serial number string
-                strcpy ((char*)info_buffer,"0000");
+                sprintf(sdstr,"0x%08lX",getSDSerial());
+                strcpy ((char*)info_buffer,sdstr);
                 break;
         default:
                 return 2;
                 break;
     }
+
     return 0;
 }
 /*
@@ -406,7 +408,7 @@ diskerror_t read_or_write_sector (uint8_t read_or_write_flag, uint8_t nr_device,
     }
     #endif
 
-    workarea_t* workarea = get_workarea();
+    //workarea_t* workarea = get_workarea();
     
     if (nr_device!=1 || nr_lun!=1)
         return IDEVL;
