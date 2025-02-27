@@ -10,7 +10,6 @@ void __not_in_flash_func(io_main2)(){
     
     sleep_ms(10000);
 
-    
     // Initialize the microSD card
     sd_card_t *sd_card = sd_get_by_num(0);
     if (sd_card == NULL) {
@@ -35,7 +34,7 @@ void __not_in_flash_func(io_main)(){
 
     uint8_t  data_buffer[512];
     uint16_t data_to_send = 0;
-    uint8_t  data_byte_index = 0;
+    uint16_t  data_byte_index = 0;
 
     uint8_t ctrl_to_receive = 0;
     uint32_t block_address = 0;
@@ -221,15 +220,15 @@ void __not_in_flash_func(io_main)(){
 
                                     // debug print the data buffer
                                     //printf("MSX: SD card block data for block %d:\n", block_address);
-                                    //for (int i = 0; i < 512; i += 16) {
+                                    /*for (int i = 0; i < 512; i += 16) {
                                         // Print the address (in hexadecimal, 4 digits)
-                                       // printf("%04X: ", i);
+                                       printf("%04X: ", i);
                                         // Print 16 bytes per line
-                                        //for (int j = 0; j < 16; j++) {
-                                        //        printf("%02X ", data_buffer[i + j]);
-                                       // }
-                                       // printf("\n");
-                                   // }
+                                        for (int j = 0; j < 16; j++) {
+                                                printf("%02X ", data_buffer[i + j]);
+                                        }
+                                        printf("\n");
+                                    }*/
 
                                 }
                             }
@@ -337,13 +336,13 @@ void __not_in_flash_func(io_main)(){
 
                 if ((port == 0x9E) || (port == 0x9F))
                 {
-                    gpio_set_dir(PIN_BUSSDIR, GPIO_OUT); 
+                    //gpio_set_dir(PIN_BUSSDIR, GPIO_OUT); 
                     gpio_set_dir_out_masked(0xFF << 16); // Set data bus to output mode
-                    gpio_put(PIN_BUSSDIR, 0); // Set the data bus to output mode
+                    //gpio_put(PIN_BUSSDIR, 0); // Set the data bus to output mode
                     gpio_put_masked(0xFF0000, out_val << 16); // Write the data to the data bus
                     while (!gpio_get(PIN_RD)) tight_loop_contents();
-                    gpio_put(PIN_BUSSDIR, 1); // Set the data bus to output mode
-                    gpio_set_dir(PIN_BUSSDIR, GPIO_IN);
+                    //gpio_put(PIN_BUSSDIR, 1); // Set the data bus to output mode
+                    //gpio_set_dir(PIN_BUSSDIR, GPIO_IN);
                     gpio_set_dir_in_masked(0xFF << 16); // Return data bus to input mode after cycle completes
 
                 }

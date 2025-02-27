@@ -51,52 +51,24 @@ ROMRecord records[MAX_ROM_RECORDS]; // Array to store the ROM records
 // Initialize GPIO pins
 static inline void setup_gpio()
 {
-    // address pins
-    gpio_init(PIN_A0);  gpio_set_dir(PIN_A0, GPIO_IN);
-    gpio_init(PIN_A1);  gpio_set_dir(PIN_A1, GPIO_IN);
-    gpio_init(PIN_A2);  gpio_set_dir(PIN_A2, GPIO_IN);
-    gpio_init(PIN_A3);  gpio_set_dir(PIN_A3, GPIO_IN);
-    gpio_init(PIN_A4);  gpio_set_dir(PIN_A4, GPIO_IN);
-    gpio_init(PIN_A5);  gpio_set_dir(PIN_A5, GPIO_IN);
-    gpio_init(PIN_A6);  gpio_set_dir(PIN_A6, GPIO_IN);
-    gpio_init(PIN_A7);  gpio_set_dir(PIN_A7, GPIO_IN);
-    gpio_init(PIN_A8);  gpio_set_dir(PIN_A8, GPIO_IN);
-    gpio_init(PIN_A9);  gpio_set_dir(PIN_A9, GPIO_IN);
-    gpio_init(PIN_A10); gpio_set_dir(PIN_A10, GPIO_IN);
-    gpio_init(PIN_A11); gpio_set_dir(PIN_A11, GPIO_IN);
-    gpio_init(PIN_A12); gpio_set_dir(PIN_A12, GPIO_IN);
-    gpio_init(PIN_A13); gpio_set_dir(PIN_A13, GPIO_IN);
-    gpio_init(PIN_A14); gpio_set_dir(PIN_A14, GPIO_IN);
-    gpio_init(PIN_A15); gpio_set_dir(PIN_A15, GPIO_IN);
 
-    // data pins
-    gpio_init(PIN_D0); 
-    gpio_init(PIN_D1); 
-    gpio_init(PIN_D2); 
-    gpio_init(PIN_D3); 
-    gpio_init(PIN_D4); 
-    gpio_init(PIN_D5); 
-    gpio_init(PIN_D6);  
-    gpio_init(PIN_D7); 
+    for (int i = 0; i <= 23; i++) {
+        gpio_init(i);
+        gpio_set_input_hysteresis_enabled(i, true);
+    }
+
+    for (int i = 0; i <= 15; i++) {
+        gpio_set_dir(i, GPIO_IN);
+    }
 
     // Initialize control pins as input
-    gpio_init(PIN_RD); gpio_set_dir(PIN_RD, GPIO_IN); gpio_pull_up(PIN_RD);   
-    gpio_init(PIN_WR); gpio_set_dir(PIN_WR, GPIO_IN); gpio_pull_up(PIN_WR);
-    gpio_init(PIN_IORQ); gpio_set_dir(PIN_IORQ, GPIO_IN); gpio_pull_up(PIN_IORQ);
-    gpio_init(PIN_SLTSL); gpio_set_dir(PIN_SLTSL, GPIO_IN); gpio_pull_up(PIN_SLTSL);
-    gpio_init(PIN_BUSSDIR); gpio_set_dir(PIN_BUSSDIR, GPIO_IN); gpio_pull_up(PIN_BUSSDIR);
+    gpio_init(PIN_RD); gpio_set_dir(PIN_RD, GPIO_IN);    
+    gpio_init(PIN_WR); gpio_set_dir(PIN_WR, GPIO_IN); 
+    gpio_init(PIN_IORQ); gpio_set_dir(PIN_IORQ, GPIO_IN); 
+    gpio_init(PIN_SLTSL); gpio_set_dir(PIN_SLTSL, GPIO_IN); 
+    gpio_init(PIN_BUSSDIR); gpio_set_dir(PIN_BUSSDIR, GPIO_IN); 
 }
 
-uint8_t __not_in_flash_func(read_data_bus)(void) {
-    // Read the GPIO_IN register and extract bits 16 to 23
-    uint32_t gpio_in = sio_hw->gpio_in;
-    return (sio_hw->gpio_in >> 16) & 0xFF;
-}
-
-// Function to write data to MSX data bus
-void __not_in_flash_func(write_data_bus)(uint8_t data) {
-    gpio_put_masked(0xFF0000, data);
-}
 
 // read_ulong - Read a 4-byte value from the memory area
 // This function will read a 4-byte value from the memory area pointed by ptr and return the value as an unsigned long
@@ -104,7 +76,7 @@ void __not_in_flash_func(write_data_bus)(uint8_t data) {
 //   ptr - Pointer to the memory area to read the value from
 // Returns:
 //   The 4-byte value as an unsigned long 
-unsigned long read_ulong(const unsigned char *ptr) {
+unsigned long __no_inline_not_in_flash_func(read_ulong)(const unsigned char *ptr) {
     return (unsigned long)ptr[0] |
            ((unsigned long)ptr[1] << 8) |
            ((unsigned long)ptr[2] << 16) |
@@ -117,7 +89,7 @@ unsigned long read_ulong(const unsigned char *ptr) {
 //   memory - Pointer to the memory area to check
 // Returns:
 //   1 if the memory area is the end of the data, 0 otherwise
-int isEndOfData(const unsigned char *memory) {
+int __no_inline_not_in_flash_func(isEndOfData)(const unsigned char *memory) {
     for (int i = 0; i < ROM_RECORD_SIZE; i++) {
         if (memory[i] != 0xFF) {
             return 0;
@@ -209,7 +181,79 @@ int __no_inline_not_in_flash_func(loadrom_msx_menu)(uint32_t offset)
 // AB is on 0x0000, 0x0001
 // 16KB ROMS have only one page in the 0x4000-0x7FFF area
 // AB is on 0x0000, 0x0001
-void __no_inline_not_in_flash_func(loadrom_plain32)(uint32_t offset)
+
+void __no_inline_not_in_flash_func(loadrom_plain32_optimized)(uint32_t offset) 
+{
+    uint32_t gpio_mask = 0xFF << 16;  // Precompute data bus mask
+    gpio_set_dir_in_masked(gpio_mask); // Set data bus to input mode
+
+    while (true) 
+    {
+        if (!(gpio_get(PIN_SLTSL))) // Slot selected (active low)
+        {
+            uint16_t addr = gpio_get_all() & 0x00FFFF; // Read the address bus
+            if (addr >= 0x4000 && addr <= 0xBFFF) // Check if the address is within the ROM range
+            {
+                if (!(gpio_get(PIN_RD))) // Read cycle (active low)
+                {
+                    uint32_t rom_addr = offset + (addr - 0x4000); // Calculate ROM address
+                    gpio_set_dir_out_masked(gpio_mask); // Set data bus to output mode
+                    gpio_put_masked(0xFF0000, (uint32_t)rom[rom_addr] << 16);
+                    volatile uint32_t *rd_reg = (volatile uint32_t *)&sio_hw->gpio_in;
+                    while (!(*rd_reg & (1 << PIN_RD))) // Wait for RD to go high
+                    {
+                        __asm volatile("nop"); // Prevents compiler optimizations
+                    }
+                    gpio_set_dir_in_masked(gpio_mask); // Restore data bus to input mode
+                }
+            }
+        }
+    }
+}
+
+
+void loadrom_plain32(uint32_t offset)
+{
+    static uint8_t rom_sram[32768];
+
+    //setup the rom_sram buffer for the 32KB ROM
+    gpio_init(PIN_WAIT); // Init wait signal pin
+    gpio_set_dir(PIN_WAIT, GPIO_OUT); // Set the WAIT signal as output
+    gpio_put(PIN_WAIT, 0); // Wait until we are ready to read the ROM
+    memset(rom_sram, 0, 32768); // Clear the SRAM buffer
+    memcpy(rom_sram, rom + offset, 32768); //for 32KB ROMs we start at 0x4000
+    gpio_put(PIN_WAIT, 1); // Lets go!
+
+    // Set data bus to input mode
+    gpio_set_dir_in_masked(0xFF << 16); // Set data bus to input mode
+    while (true) 
+    {
+        bool sltsl = !(gpio_get(PIN_SLTSL)); // Slot selected (active low)
+        bool rd = !(gpio_get(PIN_RD));       // Read cycle (active low)
+
+        if (sltsl) 
+        {
+            uint16_t addr = gpio_get_all() & 0x00FFFF; // Read the address bus
+            if (addr >= 0x4000 && addr <= 0xBFFF) // Check if the address is within the ROM range
+            {
+                if (rd)
+                {
+                    uint32_t rom_addr = (addr - 0x4000); // Calculate flash address
+                    gpio_set_dir_out_masked(0xFF << 16); // Set data bus to output mode
+                    gpio_put_masked(0xFF0000, rom_sram[rom_addr] << 16); // Write the data to the data bus
+                    while (!(gpio_get(PIN_RD)))  // Wait until the read cycle completes (RD goes high)
+                    {
+                        tight_loop_contents();
+                    }
+                    gpio_set_dir_in_masked(0xFF << 16); // Return data bus to input mode after cycle completes
+                }
+            } 
+        } 
+    }
+}
+
+
+void __no_inline_not_in_flash_func(loadrom_plain32_flash)(uint32_t offset)
 {
     gpio_set_dir_in_masked(0xFF << 16); // Set data bus to input mode
     while (true) 
@@ -481,7 +525,6 @@ void __no_inline_not_in_flash_func(loadrom_ascii16)(uint32_t offset)
                         tight_loop_contents();
                     }
                 }
-                
             }
         }
     }
@@ -725,9 +768,10 @@ void __no_inline_not_in_flash_func(loadrom_neo16)(uint32_t offset)
 
 
 // Main function running on core 0
-int main()
+int __no_inline_not_in_flash_func(main)()
 {
-    set_sys_clock_khz(285000, true);     // Set system clock to 270MHz
+    set_sys_clock_khz(280000, true);     // Set system clock to 285Mhz
+
     stdio_init_all();     // Initialize stdio
 
     multicore_launch_core1(io_main);    // Launch core 1

@@ -8,8 +8,7 @@
 #include "sdcards.h"
 
 
-static uint8_t sd_manufacturer_id;
-static char* sd_manufacturer_name;
+static workarea_t workarea;
 
 int putchar (int character)
 {
@@ -28,24 +27,6 @@ int putchar (int character)
     return character;
 }
 
-// return the pointer to the allocated workarea
-workarea_t* get_workarea() __z88dk_fastcall __naked
-{
-    __asm
-    GWORK .equ 0x4045
-    CALBNK .equ 0x4042
-    push ix
-    xor a
-    ex af,af' ;'
-    xor a
-    LD	ix,#GWORK
-	call CALBNK
-    ld l,0(ix)
-    ld h,1(ix)
-    pop ix
-    ret
-    __endasm;
-} 
 
 /*
     ;-----------------------------------------------------------------------------
@@ -55,9 +36,7 @@ workarea_t* get_workarea() __z88dk_fastcall __naked
 */
 void interrupt ()
 {
-    #ifdef DEBUG
-        printf ("interrupt\r\n");
-    #endif
+
 }
 
 /*
@@ -105,7 +84,7 @@ uint16_t get_workarea_size (uint8_t reduced_drive_count,uint8_t nr_available_dri
 void init_driver (uint8_t reduced_drive_count,uint8_t nr_allocated_drives)
 {
 
-    workarea_t* workarea = get_workarea();
+    //workarea_t* workarea = get_workarea();
 
     printf("MSX PICOVERSE 2350\r\n");
     printf("The Retro Hacker (c) 2025\r\n");
@@ -119,14 +98,14 @@ void init_driver (uint8_t reduced_drive_count,uint8_t nr_allocated_drives)
     if (sd_init==0x00)
     {
 
-        //card detected
-        workarea->disk_change = true;
+        // initializing the microSD card and filling the workarea with info
+        workarea.disk_change = true;
+        workarea.manufacturer_id = getManufacturerID();
+        workarea.manufacturer_name = getManufacturerName(workarea.manufacturer_id);
+        workarea.serial = getSDSerial();
 
-        sd_manufacturer_id = getManufacturerID();
-        //send command to get the manufacturer code
-        sd_manufacturer_name = getManufacturerName(sd_manufacturer_id);
-
-        printf("%s microSD\r\n",sd_manufacturer_name);
+    
+        printf("Detected %s microSD\r\n",workarea.manufacturer_name);
         
         delay_ms(2000);
 
@@ -154,8 +133,6 @@ uint8_t get_nr_drives_boottime (uint8_t reduced_drive_count,uint8_t dos_mode)
     #ifdef DEBUG
         printf ("get_nr_drives_boottime (%d,%d)\r\n",dos_mode,reduced_drive_count);
     #endif
-
-    //workarea_t* workarea = get_workarea();
     
     return 1; // 1 drive requested
 }
@@ -272,10 +249,8 @@ uint8_t get_lun_info (uint8_t nr_lun,uint8_t nr_device,luninfo_t* luninfo)
 */
 uint8_t get_device_info (uint8_t nr_info,uint8_t nr_device,uint8_t* info_buffer)
 {
-
-    //workarea_t* workarea = get_workarea();
     
-    char* sdstr;
+    char* sdstr = "";
 
     if (nr_device!=1)
         return 1;
@@ -287,11 +262,10 @@ uint8_t get_device_info (uint8_t nr_info,uint8_t nr_device,uint8_t* info_buffer)
                 ((deviceinfo_t*)info_buffer)->flags = 0x00;
                 break;
         case 1: // Manufacturer name string
-                strcpy ((char*)info_buffer,sd_manufacturer_name);
+                strcpy ((char*)info_buffer,workarea.manufacturer_name);
                 break;
         case 2: // Device name string
-                //sprintf(sdstr,"%s microSD card",sd_manufacturer_name);
-                strcpy((char*)info_buffer, sd_manufacturer_name);
+                strcpy((char*)info_buffer, workarea.manufacturer_name);
                 strcat((char*)info_buffer, " microSD card");
                 break;
         case 3: // Serial number string
@@ -344,26 +318,14 @@ uint8_t get_device_status (uint8_t nr_lun,uint8_t nr_device)
     if (nr_device!=1 || nr_lun!=1)
         return 0;
 
-    workarea_t* workarea = get_workarea();
-    if (workarea->disk_change)
+    if (workarea.disk_change)
     {
-        workarea->disk_change = false;
+        workarea.disk_change = false;
         return 2;
     }
 
     return 1;
 }
-
-#ifdef DEBUG
-void print_hex16 (uint16_t value)
-{
-    uint8_t n1 = (value & 0x0f);
-    uint8_t n2 = ((value >> 4) & 0x0f);
-    uint8_t n3 = ((value >> 8) & 0x0f);
-    uint8_t n4 = ((value >> 12) & 0x0f);
-    printf ("%x%x%x%x",n4,n3,n2,n1);
-}
-#endif
 
 /*
 ;-----------------------------------------------------------------------------
@@ -407,13 +369,22 @@ diskerror_t read_or_write_sector (uint8_t read_or_write_flag, uint8_t nr_device,
         printf (")\r\n");
     }
     #endif
-
-    //workarea_t* workarea = get_workarea();
     
     if (nr_device!=1 || nr_lun!=1)
         return IDEVL;
 
     //To be implemented
+    if (!read_write_disk_sectors (read_or_write_flag & Z80_CARRY_MASK,nr_sectors,sector,sector_buffer))
+    {
+
+        if (read_or_write_flag & Z80_CARRY_MASK)
+            printf ("error writing disk-sector\r\n");
+        else
+            printf ("error reading disk-sector\r\n");
+
+        return RNF;
+    }
+
 
     return OK;
 }

@@ -14,6 +14,10 @@ typedef struct
 {
     uint8_t mount_mode;
     bool    disk_change;
+    uint8_t manufacturer_id;
+    char* manufacturer_name;
+    uint32_t serial;
+    uint32_t capacity;
 } workarea_t;
 
 typedef struct

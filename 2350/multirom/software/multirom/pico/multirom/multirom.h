@@ -48,10 +48,9 @@
 #define PIN_BUSSDIR 47  // Bus direction line 
 
 static inline void setup_gpio();
-unsigned long read_ulong(const unsigned char *ptr);
+unsigned long __no_inline_not_in_flash_func(read_ulong)(const unsigned char *ptr);
 int isEndOfData(const unsigned char *memory);
-uint8_t __not_in_flash_func(read_data_bus)(void);
-void __not_in_flash_func(write_data_bus)(uint8_t data);
+
 int __no_inline_not_in_flash_func(loadrom_msx_menu)(uint32_t offset);
 void __no_inline_not_in_flash_func(loadrom_plain32)(uint32_t offset);
 void __no_inline_not_in_flash_func(loadrom_linear48)(uint32_t offset);

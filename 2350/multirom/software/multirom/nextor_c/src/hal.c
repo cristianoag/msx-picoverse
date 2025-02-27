@@ -69,6 +69,31 @@ uint8_t read_status ()  __z88dk_fastcall __naked
     __endasm;
 }
 
+void  read_data_multiple (uint8_t* buffer,uint8_t len)
+{
+    __asm
+    ld iy, #2
+    add iy,sp
+    ld b,+2(iy)
+    ld h,+1(iy)
+    ld l,+0(iy)
+    ld c, #DATA_PORT
+    .db 0xED,0xB2 ;inir 
+    __endasm;
+}
+void    write_data_multiple (uint8_t* buffer,uint8_t len)
+{
+    __asm
+    ld iy, #2
+    add iy,sp
+    ld b,+2(iy)
+    ld h,+1(iy)
+    ld l,+0(iy)
+    ld c, #DATA_PORT
+    .db 0xED,0xB3 ;otir 
+    __endasm;
+}
+
 #pragma disable_warning 85	// because the var msg is not used in C context
 void msx_wait (uint16_t times_jiffy)  __z88dk_fastcall __naked
 {
@@ -126,4 +151,73 @@ uint32_t getSDSerial()
         sd_serial |= (uint32_t)byte<<(8 * i);
     }
     return sd_serial;
+}
+
+bool read_write_disk_sectors (bool writing,uint8_t nr_sectors,uint32_t* sector,uint8_t* sector_buffer)
+{
+    if (!writing)
+    {
+        if (!sd_disk_read (nr_sectors,(uint8_t*)sector,sector_buffer))
+            return false;
+    }
+    else
+    {
+        if (!sd_disk_write (nr_sectors,(uint8_t*)sector,sector_buffer))
+            return false;
+    }
+    
+    return true;
+}
+
+
+bool sd_disk_read (uint8_t nr_sectors,uint8_t* lba,uint8_t* sector_buffer)
+{
+    //printf("Reading %d sectors\r\n",nr_sectors);
+    printf("LBA: %02X %02X %02X %02X\r\n",lba[0],lba[1],lba[2],lba[3]);
+
+    write_command(0x06);
+    delay_ms(50);
+    write_command (lba[0]);
+    write_command (lba[1]);
+    write_command (lba[2]);
+    write_command (lba[3]);
+    delay_ms(50);
+    write_command(0x06);
+
+    uint16_t len = nr_sectors * 512;
+    delay_ms(50);
+    for (uint16_t i = 0; i < 512; i++) {
+        sector_buffer[i] = read_data();
+    }
+
+    //printf("Buffer:\r\n");
+
+    //while (len > 0) {
+     //   uint8_t chunk_size = (len > 256) ? 255 : len - 1;
+     //   read_data_multiple(sector_buffer, chunk_size);
+    //    sector_buffer += chunk_size + 1;
+      //  len -= chunk_size + 1;
+   // }
+
+    
+    /*printf("Buffer:\r\n");
+    for (int i = 0; i < 512; i += 16) {
+        // Print the address (in hexadecimal, 4 digits)
+        printf("%04X: ", i);
+        // Print 16 bytes per line
+        for (int j = 0; j < 16; j++) {
+                printf("%02X", sector_buffer[i + j]);
+        }
+        printf("\r\n");
+    }*/
+    
+
+    return true;
+
+}
+
+bool sd_disk_write (uint8_t nr_sectors,uint8_t* lba,uint8_t* sector_buffer)
+{
+    //printf("Writing %d sectors\r\n",nr_sectors);
+    return true;
 }
