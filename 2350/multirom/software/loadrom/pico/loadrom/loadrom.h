@@ -4,7 +4,7 @@
 //
 // loadrom.h - Simple ROM loader for MSX PICOVERSE project - v1.0
 //
-// This is  small test program that demonstrates how to load simple ROM images using the MSX PICOVERSE project. 
+// This is  small test program that demonstrates how to load ROM images using the MSX PICOVERSE project. 
 // You need to concatenate the ROM image to the  end of this program binary in order  to load it.
 // The program will then act as a simple ROM cartridge that responds to memory read requests from the MSX.
 // 
@@ -17,7 +17,6 @@
 #define MAX_MEM_SIZE        (131072+29)    // Maximum memory size
 #define ROM_NAME_MAX        20          // Maximum ROM name length
 #define SIZE_CONFIG_RECORD  29          // Size of the configuration record in the ROM
-#define PICO_FLASH_SPI_CLKDIV 2
 
 // -----------------------
 // User-defined pin assignments for the Raspberry Pi Pico
@@ -39,6 +38,7 @@
 #define PIN_A13    13
 #define PIN_A14    14
 #define PIN_A15    15
+#define ADDR_PINS   0    // Address bus (A0-A15)
 
 // Data lines (D0-D7)
 #define PIN_D0     16
@@ -49,6 +49,7 @@
 #define PIN_D5     21
 #define PIN_D6     22
 #define PIN_D7     23
+#define DATA_PINS   16   // Data bus (D0-D7)
 
 // Control signals
 #define PIN_RD     24   // Read strobe from MSX

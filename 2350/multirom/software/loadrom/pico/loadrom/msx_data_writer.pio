@@ -1,0 +1,9 @@
+.program msx_data_writer
+start:
+    pull block           ; Wait for the CPU to send data (blocks if empty)
+    ;set pindirs, 0xFF0000     
+    out pins, 8          ; Write the data to the bus
+
+    wait 1 pin 24        ; Wait for /RD to go high (end of read cycle)
+    set pindirs, 0       ; Set data bus back to input mode
+    jmp start            ; Repeat

@@ -15,9 +15,9 @@ if(WIN32)
 else()
     set(USERHOME $ENV{HOME})
 endif()
-set(sdkVersion 2.1.0)
-set(toolchainVersion 13_3_Rel1)
-set(picotoolVersion 2.1.0)
+set(sdkVersion 2.1.1)
+set(toolchainVersion 14_2_Rel1)
+set(picotoolVersion 2.1.1)
 set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
 if (EXISTS ${picoVscode})
     include(${picoVscode})
@@ -38,16 +38,22 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(loadrom loadrom.c )
+add_executable(loadrom loadrom.c msx_address_reader.pio msx_data_writer.pio)
+
+pico_generate_pio_header(loadrom ${CMAKE_CURRENT_SOURCE_DIR}/msx_address_reader.pio)
+pico_generate_pio_header(loadrom ${CMAKE_CURRENT_SOURCE_DIR}/msx_data_writer.pio)
+
 pico_set_program_name(loadrom "loadrom")
 pico_set_program_version(loadrom "0.1")
 
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(loadrom 0)
-pico_enable_stdio_usb(loadrom 0)
+pico_enable_stdio_usb(loadrom 1)
 
 # Add the standard library to the build
 target_link_libraries(loadrom
+        hardware_pio
+        hardware_dma
         pico_stdlib)
 
 # Add the standard include files to the build

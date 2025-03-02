@@ -17,6 +17,8 @@
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
 #include "hardware/clocks.h"
+#include "hardware/pio.h"
+#include "msx_rom_loader.pio.h"
 #include "multirom.h"
 #include "io.h"
 
@@ -69,6 +71,24 @@ static inline void setup_gpio()
     gpio_init(PIN_BUSSDIR); gpio_set_dir(PIN_BUSSDIR, GPIO_IN); 
 }
 
+void setup_pio_msx_loader(PIO pio, uint sm) {
+    uint offset = pio_add_program(pio, &msx_rom_loader_program);
+    pio_sm_config c = msx_rom_loader_program_get_default_config(offset);
+
+    sm_config_set_in_pins(&c, ADDR_PINS);
+    sm_config_set_out_pins(&c, DATA_PINS, 8);
+
+    pio_gpio_init(pio, PIN_RD);
+    pio_gpio_init(pio, PIN_SLTSL);
+    for (int i = 0; i < 16; i++) pio_gpio_init(pio, ADDR_PINS + i);
+    for (int i = 0; i < 8; i++) pio_gpio_init(pio, DATA_PINS + i);
+
+    pio_sm_set_consecutive_pindirs(pio, sm, ADDR_PINS, 16, false);
+    pio_sm_set_consecutive_pindirs(pio, sm, DATA_PINS, 8, true);
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
 
 // read_ulong - Read a 4-byte value from the memory area
 // This function will read a 4-byte value from the memory area pointed by ptr and return the value as an unsigned long
@@ -211,6 +231,18 @@ void __no_inline_not_in_flash_func(loadrom_plain32_optimized)(uint32_t offset)
     }
 }
 
+void loadrom_plain32_pio(PIO pio, uint sm, uint32_t offset) {
+    setup_pio_msx_loader(pio, sm);
+    while (true) {
+        uint16_t addr = pio_sm_get_blocking(pio, sm) & 0xFFFF;
+        if (addr >= 0x4000 && addr <= 0xBFFF) {
+            uint8_t data = rom[offset + (addr - 0x4000)];
+            pio_sm_put_blocking(pio, sm, data);
+        } else {
+            pio_sm_put_blocking(pio, sm, 0xFF);
+        }
+    }
+}
 
 void loadrom_plain32(uint32_t offset)
 {
@@ -773,6 +805,8 @@ int __no_inline_not_in_flash_func(main)()
     set_sys_clock_khz(280000, true);     // Set system clock to 285Mhz
 
     stdio_init_all();     // Initialize stdio
+    PIO pio = pio0;
+    uint sm = 0;
 
     multicore_launch_core1(io_main);    // Launch core 1
 
@@ -784,7 +818,8 @@ int __no_inline_not_in_flash_func(main)()
     switch (records[rom_index].Mapper) {
         case 1:
         case 2:
-            loadrom_plain32(records[rom_index].Offset);
+            //loadrom_plain32(records[rom_index].Offset);
+            loadrom_plain32_pio(pio, sm, records[rom_index].Offset);
             break;
         case 3:
             loadrom_konamiscc(records[rom_index].Offset);
