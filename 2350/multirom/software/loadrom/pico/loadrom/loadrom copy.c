@@ -330,19 +330,12 @@ void __no_inline_not_in_flash_func(loadrom_plain32)(uint32_t offset)
 // Tests with PIO and DMA when loading 32KB roms
 void __no_inline_not_in_flash_func(loadrom_plain32_pio)(uint32_t offset)
 {
-    memcpy(rom_sram, rom + 0x1d, 32768);
-
     setup_pio_capture_addr();
-    //setup_pio_output_data();
+    setup_pio_output_data();
 
-    if (!pio_sm_is_rx_fifo_empty(pio, sm0)) {
-        uint32_t addr_val = pio_sm_get_blocking(pio, sm0);
-        uint16_t addr = (uint16_t) (addr_val>>16);        
-
-        printf("Address: %x\n", addr);
-        if (addr >= 0x4000 && addr <= 0xBFFF) {
-
-        }
+    while (true)
+    {
+        tight_loop_contents();
     }
     
 }
