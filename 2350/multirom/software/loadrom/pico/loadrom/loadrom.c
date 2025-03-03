@@ -1220,8 +1220,9 @@ void __no_inline_not_in_flash_func(loadrom_neo16)(uint32_t offset)
 // -----------------------
 int __no_inline_not_in_flash_func(main)()
 {
+
     //with PIO + DMA we can lower down the clock 
-    set_sys_clock_khz(200000, true);
+    set_sys_clock_khz(150000, true);
 
     // Initialize stdio
     stdio_init_all();
@@ -1252,9 +1253,9 @@ int __no_inline_not_in_flash_func(main)()
     {
         case 1:
         case 2:
-            //loadrom_plain32(0x1d); // flash version
+            loadrom_plain32(0x1d); // flash version
             //loadrom_plain32_dma(0x1d); // dma version
-            loadrom_plain32_pio(0x1d); // pio version
+            //loadrom_plain32_pio(0x1d); // pio version
             //loadrom_plain32_sram(0x1d, rom_size); //sram version
             //loadrom_plain32_sram(pio, sm_addr, 0x1d, rom_size);
             //loadrom_plain32(pio, sm_addr, 0x1d);
