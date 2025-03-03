@@ -37,11 +37,14 @@ pico_sdk_init()
 # add_compile_options(-O3)
 
 # Add executable. Default name is the project name, version 0.1
+add_executable(loadrom 
+    loadrom.c 
+    msx_capture_addr.pio
+    msx_output_data.pio
+    )
 
-add_executable(loadrom loadrom.c msx_address_reader.pio msx_data_writer.pio)
-
-pico_generate_pio_header(loadrom ${CMAKE_CURRENT_SOURCE_DIR}/msx_address_reader.pio)
-pico_generate_pio_header(loadrom ${CMAKE_CURRENT_SOURCE_DIR}/msx_data_writer.pio)
+pico_generate_pio_header(loadrom ${CMAKE_CURRENT_SOURCE_DIR}/msx_capture_addr.pio)
+pico_generate_pio_header(loadrom ${CMAKE_CURRENT_SOURCE_DIR}/msx_output_data.pio)
 
 pico_set_program_name(loadrom "loadrom")
 pico_set_program_version(loadrom "0.1")
