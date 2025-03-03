@@ -138,32 +138,14 @@ void __no_inline_not_in_flash_func(sm0_irq_handler_plain32)() {
         uint16_t addr = (uint16_t) (addr_val>>16);        
 
         if (addr >= 0x4000 && addr <= 0xBFFF) {
-           // printf("0x%x\n", addr);
 
-            //uint32_t rom_addr = 0x1d + (addr - 0x4000);
-                
-            // Write the data directly from ROM (with the appropriate shift)
-            //uint8_t data = rom[rom_addr];
-            //printf("Data before transfer: %x\n", rom[rom_addr]);
-            //printf("Data at ROM address %x: %x\n", rom_addr, *(rom + rom_addr));
-
-            //dma_channel_set_read_addr(dma_chan, rom+rom_addr, true);
-            
-            gpio_set_dir_out_masked(0xFF << 16);
-            //pio_sm_set_out_pins(pio, sm1, DATA_PINS, 8);
-            //dma_channel_set_read_addr(dma_chan, rom_sram+(addr - 0x4000), true);
-            gpio_put_masked(0xFF0000, rom_sram[(addr - 0x4000)]); // Write the data to the data bus
-
-            //pio_sm_set_in_pins(pio, sm1, DATA_PINS);
-            gpio_set_dir_in_masked(0xFF << 16);
-           // dma_channel_start(dma_chan);
-           // dma_channel_wait_for_finish_blocking(dma_chan);
-
+            uint32_t rom_addr = 0x1d + (addr - 0x4000);
+            dma_channel_set_read_addr(dma_chan, rom+rom_addr, true);
+            //debug
            //uint8_t data_received_from_sm1 = pio_sm_get_blocking(pio, sm1);
             //printf("Data received from SM1: %x\n", data_received_from_sm1);
             //dma_channel_wait_for_finish_blocking(dma_chan);
             //printf("Data transferred via DMA: %x\n", dummy_dst[0]);
-
         }
         
     }

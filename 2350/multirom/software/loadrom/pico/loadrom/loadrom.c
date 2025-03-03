@@ -1222,7 +1222,7 @@ int __no_inline_not_in_flash_func(main)()
 {
 
     //with PIO + DMA we can lower down the clock 
-    set_sys_clock_khz(150000, true);
+    set_sys_clock_khz(210000, true);
 
     // Initialize stdio
     stdio_init_all();
