@@ -141,11 +141,12 @@ void __no_inline_not_in_flash_func(sm0_irq_handler_plain32)() {
 
             uint32_t rom_addr = 0x1d + (addr - 0x4000);
             dma_channel_set_read_addr(dma_chan, rom+rom_addr, true);
+            
             //debug
-           //uint8_t data_received_from_sm1 = pio_sm_get_blocking(pio, sm1);
-            //printf("Data received from SM1: %x\n", data_received_from_sm1);
-            //dma_channel_wait_for_finish_blocking(dma_chan);
-            //printf("Data transferred via DMA: %x\n", dummy_dst[0]);
+            /*uint8_t data_received_from_sm1 = pio_sm_get_blocking(pio, sm1);
+            printf("Data received from SM1: %x\n", data_received_from_sm1);
+            dma_channel_wait_for_finish_blocking(dma_chan);
+            printf("Data transferred via DMA: %x\n", dummy_dst[0]);*/
         }
         
     }
@@ -167,9 +168,9 @@ void setup_pio_capture_addr() {
     sm_config_set_fifo_join(&c0, PIO_FIFO_JOIN_NONE);  // Separate RX and TX FIFOs
     sm_config_set_clkdiv(&c0, 1.0f);  // MSX bus timing adjust
 
-    //irq_set_exclusive_handler(PIO0_IRQ_0, sm0_irq_handler_plain32);
-    //irq_set_enabled(PIO0_IRQ_0, true);
-    //pio_set_irq0_source_enabled(pio, pis_sm0_rx_fifo_not_empty, true);
+    irq_set_exclusive_handler(PIO0_IRQ_0, sm0_irq_handler_plain32);
+    irq_set_enabled(PIO0_IRQ_0, true);
+    pio_set_irq0_source_enabled(pio, pis_sm0_rx_fifo_not_empty, true);
 
     pio_sm_init(pio, sm0, offset0, &c0);
     pio_sm_set_enabled(pio, sm0, true);
@@ -1219,9 +1220,7 @@ void __no_inline_not_in_flash_func(loadrom_neo16)(uint32_t offset)
 int __no_inline_not_in_flash_func(main)()
 {
 
-    // Set systm clock to 280MHz
     set_sys_clock_khz(150000, true);
-    //configure_pio(pio, sm, 42.02);
 
     // Initialize stdio
     stdio_init_all();
