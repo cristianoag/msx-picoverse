@@ -17,8 +17,7 @@
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
 #include "hardware/clocks.h"
-#include "hardware/pio.h"
-#include "msx_rom_loader.pio.h"
+#include "hardware/structs/qmi.h"
 #include "multirom.h"
 #include "io.h"
 
@@ -69,25 +68,6 @@ static inline void setup_gpio()
     gpio_init(PIN_IORQ); gpio_set_dir(PIN_IORQ, GPIO_IN); 
     gpio_init(PIN_SLTSL); gpio_set_dir(PIN_SLTSL, GPIO_IN); 
     gpio_init(PIN_BUSSDIR); gpio_set_dir(PIN_BUSSDIR, GPIO_IN); 
-}
-
-void setup_pio_msx_loader(PIO pio, uint sm) {
-    uint offset = pio_add_program(pio, &msx_rom_loader_program);
-    pio_sm_config c = msx_rom_loader_program_get_default_config(offset);
-
-    sm_config_set_in_pins(&c, ADDR_PINS);
-    sm_config_set_out_pins(&c, DATA_PINS, 8);
-
-    pio_gpio_init(pio, PIN_RD);
-    pio_gpio_init(pio, PIN_SLTSL);
-    for (int i = 0; i < 16; i++) pio_gpio_init(pio, ADDR_PINS + i);
-    for (int i = 0; i < 8; i++) pio_gpio_init(pio, DATA_PINS + i);
-
-    pio_sm_set_consecutive_pindirs(pio, sm, ADDR_PINS, 16, false);
-    pio_sm_set_consecutive_pindirs(pio, sm, DATA_PINS, 8, true);
-
-    pio_sm_init(pio, sm, offset, &c);
-    pio_sm_set_enabled(pio, sm, true);
 }
 
 // read_ulong - Read a 4-byte value from the memory area
@@ -201,91 +181,7 @@ int __no_inline_not_in_flash_func(loadrom_msx_menu)(uint32_t offset)
 // AB is on 0x0000, 0x0001
 // 16KB ROMS have only one page in the 0x4000-0x7FFF area
 // AB is on 0x0000, 0x0001
-
-void __no_inline_not_in_flash_func(loadrom_plain32_optimized)(uint32_t offset) 
-{
-    uint32_t gpio_mask = 0xFF << 16;  // Precompute data bus mask
-    gpio_set_dir_in_masked(gpio_mask); // Set data bus to input mode
-
-    while (true) 
-    {
-        if (!(gpio_get(PIN_SLTSL))) // Slot selected (active low)
-        {
-            uint16_t addr = gpio_get_all() & 0x00FFFF; // Read the address bus
-            if (addr >= 0x4000 && addr <= 0xBFFF) // Check if the address is within the ROM range
-            {
-                if (!(gpio_get(PIN_RD))) // Read cycle (active low)
-                {
-                    uint32_t rom_addr = offset + (addr - 0x4000); // Calculate ROM address
-                    gpio_set_dir_out_masked(gpio_mask); // Set data bus to output mode
-                    gpio_put_masked(0xFF0000, (uint32_t)rom[rom_addr] << 16);
-                    volatile uint32_t *rd_reg = (volatile uint32_t *)&sio_hw->gpio_in;
-                    while (!(*rd_reg & (1 << PIN_RD))) // Wait for RD to go high
-                    {
-                        __asm volatile("nop"); // Prevents compiler optimizations
-                    }
-                    gpio_set_dir_in_masked(gpio_mask); // Restore data bus to input mode
-                }
-            }
-        }
-    }
-}
-
-void loadrom_plain32_pio(PIO pio, uint sm, uint32_t offset) {
-    setup_pio_msx_loader(pio, sm);
-    while (true) {
-        uint16_t addr = pio_sm_get_blocking(pio, sm) & 0xFFFF;
-        if (addr >= 0x4000 && addr <= 0xBFFF) {
-            uint8_t data = rom[offset + (addr - 0x4000)];
-            pio_sm_put_blocking(pio, sm, data);
-        } else {
-            pio_sm_put_blocking(pio, sm, 0xFF);
-        }
-    }
-}
-
-void loadrom_plain32(uint32_t offset)
-{
-    static uint8_t rom_sram[32768];
-
-    //setup the rom_sram buffer for the 32KB ROM
-    gpio_init(PIN_WAIT); // Init wait signal pin
-    gpio_set_dir(PIN_WAIT, GPIO_OUT); // Set the WAIT signal as output
-    gpio_put(PIN_WAIT, 0); // Wait until we are ready to read the ROM
-    memset(rom_sram, 0, 32768); // Clear the SRAM buffer
-    memcpy(rom_sram, rom + offset, 32768); //for 32KB ROMs we start at 0x4000
-    gpio_put(PIN_WAIT, 1); // Lets go!
-
-    // Set data bus to input mode
-    gpio_set_dir_in_masked(0xFF << 16); // Set data bus to input mode
-    while (true) 
-    {
-        bool sltsl = !(gpio_get(PIN_SLTSL)); // Slot selected (active low)
-        bool rd = !(gpio_get(PIN_RD));       // Read cycle (active low)
-
-        if (sltsl) 
-        {
-            uint16_t addr = gpio_get_all() & 0x00FFFF; // Read the address bus
-            if (addr >= 0x4000 && addr <= 0xBFFF) // Check if the address is within the ROM range
-            {
-                if (rd)
-                {
-                    uint32_t rom_addr = (addr - 0x4000); // Calculate flash address
-                    gpio_set_dir_out_masked(0xFF << 16); // Set data bus to output mode
-                    gpio_put_masked(0xFF0000, rom_sram[rom_addr] << 16); // Write the data to the data bus
-                    while (!(gpio_get(PIN_RD)))  // Wait until the read cycle completes (RD goes high)
-                    {
-                        tight_loop_contents();
-                    }
-                    gpio_set_dir_in_masked(0xFF << 16); // Return data bus to input mode after cycle completes
-                }
-            } 
-        } 
-    }
-}
-
-
-void __no_inline_not_in_flash_func(loadrom_plain32_flash)(uint32_t offset)
+void __no_inline_not_in_flash_func(loadrom_plain32)(uint32_t offset)
 {
     gpio_set_dir_in_masked(0xFF << 16); // Set data bus to input mode
     while (true) 
@@ -802,15 +698,11 @@ void __no_inline_not_in_flash_func(loadrom_neo16)(uint32_t offset)
 // Main function running on core 0
 int __no_inline_not_in_flash_func(main)()
 {
-    set_sys_clock_khz(280000, true);     // Set system clock to 285Mhz
-
+    
     stdio_init_all();     // Initialize stdio
-    PIO pio = pio0;
-    uint sm = 0;
+    setup_gpio();     // Initialize GPIO
 
     multicore_launch_core1(io_main);    // Launch core 1
-
-    setup_gpio();     // Initialize GPIO
 
     int rom_index = loadrom_msx_menu(0x0000); //load the first 32KB ROM into the MSX (The MSX PICOVERSE MENU)
 
@@ -818,8 +710,7 @@ int __no_inline_not_in_flash_func(main)()
     switch (records[rom_index].Mapper) {
         case 1:
         case 2:
-            //loadrom_plain32(records[rom_index].Offset);
-            loadrom_plain32_pio(pio, sm, records[rom_index].Offset);
+            loadrom_plain32(records[rom_index].Offset);
             break;
         case 3:
             loadrom_konamiscc(records[rom_index].Offset);

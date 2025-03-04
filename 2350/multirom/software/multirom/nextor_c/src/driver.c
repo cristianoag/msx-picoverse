@@ -93,7 +93,7 @@ void init_driver (uint8_t reduced_drive_count,uint8_t nr_allocated_drives)
     printf("\n\nCard: ");
 
     write_command(0x01);
-    delay_ms(2000);
+    delay_ms(1000);
     uint8_t sd_init = read_status();
     if (sd_init==0x00)
     {
@@ -104,10 +104,9 @@ void init_driver (uint8_t reduced_drive_count,uint8_t nr_allocated_drives)
         workarea.manufacturer_name = getManufacturerName(workarea.manufacturer_id);
         workarea.serial = getSDSerial();
 
-    
-        printf("Detected %s microSD\r\n",workarea.manufacturer_name);
+        printf("%s microSD\r\n",workarea.manufacturer_name);
         
-        delay_ms(2000);
+        delay_ms(1000);
 
     }
     else
@@ -355,21 +354,6 @@ uint8_t get_device_status (uint8_t nr_lun,uint8_t nr_device)
 //                                        F                           A                  C               B                     DE               HL
 diskerror_t read_or_write_sector (uint8_t read_or_write_flag, uint8_t nr_device, uint8_t nr_lun, uint8_t nr_sectors, uint32_t* sector, uint8_t* sector_buffer)
 {
-    #ifdef DEBUG
-    if (read_or_write_flag & Z80_CARRY_MASK)
-    {
-        printf ("write (%x,%x,%x,%x,",nr_device,nr_lun,nr_sectors,*sector);
-        print_hex16 ((uint16_t) sector_buffer);
-        printf (")\r\n");
-    }
-    else
-    {
-        printf ("read (%x,%x,%x,%x,",nr_device,nr_lun,nr_sectors,*sector);
-        print_hex16 ((uint16_t) sector_buffer);
-        printf (")\r\n");
-    }
-    #endif
-    
     if (nr_device!=1 || nr_lun!=1)
         return IDEVL;
 
@@ -384,7 +368,6 @@ diskerror_t read_or_write_sector (uint8_t read_or_write_flag, uint8_t nr_device,
 
         return RNF;
     }
-
 
     return OK;
 }

@@ -172,52 +172,62 @@ bool read_write_disk_sectors (bool writing,uint8_t nr_sectors,uint32_t* sector,u
 
 bool sd_disk_read (uint8_t nr_sectors,uint8_t* lba,uint8_t* sector_buffer)
 {
-    //printf("Reading %d sectors\r\n",nr_sectors);
-    printf("LBA: %02X %02X %02X %02X\r\n",lba[0],lba[1],lba[2],lba[3]);
+    //printf("Reading %d sectors\r\n", nr_sectors);
 
-    write_command(0x06);
-    delay_ms(50);
-    write_command (lba[0]);
-    write_command (lba[1]);
-    write_command (lba[2]);
-    write_command (lba[3]);
-    delay_ms(50);
-    write_command(0x06);
+    uint8_t nr = nr_sectors;
+    uint16_t offset = 0;
 
-    uint16_t len = nr_sectors * 512;
-    delay_ms(50);
+    uint8_t x = 1;
+
+    //printf("LBA: %02X %02X %02X %02X\r\n", lba[0], lba[1], lba[2], lba[3]);
+    //delay_ms(50);
+    write_command(0x06);
+    //delay_ms(20);
+    write_command(lba[3]);
+    write_command(lba[2]);
+    write_command(lba[1]);
+    write_command(lba[0]);
+    //delay_ms(20);
+    write_command(0x06);
+    delay_ms(50); // read from sd is expensive
     for (uint16_t i = 0; i < 512; i++) {
-        sector_buffer[i] = read_data();
+        sector_buffer[offset + i] = read_data();
+    }
+    offset += 512;
+    //printf("Read sector %d\r\n", x++);
+
+    while (nr > 1) {
+        write_command(0x07);
+        delay_ms(50); // read from sd is expensive
+        for (uint16_t i = 0; i < 512; i++) {
+            sector_buffer[offset + i] = read_data();
+        }
+        offset += 512;
+        //printf("Read sector %d\r\n", x++);
+        nr--;
     }
 
-    //printf("Buffer:\r\n");
-
-    //while (len > 0) {
-     //   uint8_t chunk_size = (len > 256) ? 255 : len - 1;
-     //   read_data_multiple(sector_buffer, chunk_size);
-    //    sector_buffer += chunk_size + 1;
-      //  len -= chunk_size + 1;
-   // }
-
-    
-    /*printf("Buffer:\r\n");
-    for (int i = 0; i < 512; i += 16) {
-        // Print the address (in hexadecimal, 4 digits)
-        printf("%04X: ", i);
-        // Print 16 bytes per line
-        for (int j = 0; j < 16; j++) {
-                printf("%02X", sector_buffer[i + j]);
-        }
-        printf("\r\n");
-    }*/
-    
-
     return true;
-
 }
 
 bool sd_disk_write (uint8_t nr_sectors,uint8_t* lba,uint8_t* sector_buffer)
 {
-    //printf("Writing %d sectors\r\n",nr_sectors);
+    printf("Writing %d sectors\r\n",nr_sectors);
+    //printf("LBA: %02X %02X %02X %02X\r\n",lba[0],lba[1],lba[2],lba[3]);
+
+    //delay_ms(50);
+    write_command(0x08);
+    //delay_ms(80);
+    write_command (lba[3]);
+    write_command (lba[2]);
+    write_command (lba[1]);
+    write_command (lba[0]);
+    //delay_ms(80);
+    write_command(0x08);
+    delay_ms(50);
+    for (uint16_t i = 0; i < 512; i++) {
+        write_data(sector_buffer[i]);
+    }
+
     return true;
 }

@@ -15,9 +15,9 @@ if(WIN32)
 else()
     set(USERHOME $ENV{HOME})
 endif()
-set(sdkVersion 2.1.0)
-set(toolchainVersion 13_3_Rel1)
-set(picotoolVersion 2.1.0)
+set(sdkVersion 2.1.1)
+set(toolchainVersion 14_2_Rel1)
+set(picotoolVersion 2.1.1)
 set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
 if (EXISTS ${picoVscode})
     include(${picoVscode})
@@ -39,11 +39,9 @@ add_executable(multirom
         hw_config.c
         io.c 
         multirom.c 
-        msx_rom_loader.pio
 
 )
 
-pico_generate_pio_header(multirom ${CMAKE_CURRENT_SOURCE_DIR}/msx_rom_loader.pio)
 
 add_subdirectory(lib/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/src build)
 
@@ -57,10 +55,8 @@ pico_enable_stdio_usb(multirom 1)
 # Add the standard library to the build
 target_link_libraries(multirom
         pico_stdlib
-        hardware_pio
         no-OS-FatFS-SD-SDIO-SPI-RPi-Pico
         pico_multicore
-        
         )
 
 # Add the standard include files to the build

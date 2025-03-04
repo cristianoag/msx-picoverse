@@ -1,9 +1,0 @@
-.program msx_rom_loader
-start:
-    wait 0 pin 10      ; Wait for /RD to go LOW (MSX read request)
-    in pins, 16        ; Read 16-bit address (A0-A15)
-    push noblock       ; Push address to CPU (avoid stalling)
-    pull               ; Wait for CPU to provide ROM data
-    out pins, 8        ; Output 8-bit ROM data to D0-D7
-    wait 1 pin 10      ; Wait for /RD to go HIGH
-    jmp start          ; Repeat forever

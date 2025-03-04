@@ -1220,7 +1220,6 @@ void __no_inline_not_in_flash_func(loadrom_neo16)(uint32_t offset)
 // -----------------------
 int __no_inline_not_in_flash_func(main)()
 {
-
     //with PIO + DMA we can lower down the clock 
     set_sys_clock_khz(210000, true);
 
